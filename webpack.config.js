@@ -1,30 +1,31 @@
-var path = require("path");
-
 module.exports = {
+  context: __dirname + "/src",
   entry: {
-    app: [
-      './src/index.js'
-    ]
+    javascript: "./index.js",
+    html: "./index.html",
   },
-
   output: {
-    path: path.resolve(__dirname + '/dist'),
-    filename: '[name].js',
+    filename: "app.js",
+    path: __dirname + "/dist",
   },
-
   module: {
     loaders: [
+      {
+        test: /\.js$/,
+        exclude: /node_modules/,
+        presets: ["es2015"],
+        loaders: ["babel-loader"],
+      },
+      {
+        test: /\.html$/,
+        loader: "file?name=[name].[ext]",
+      },
       {
         test: /\.(css|scss)$/,
         loaders: [
           'style-loader',
           'css-loader',
         ]
-      },
-      {
-        test:    /\.html$/,
-        exclude: /node_modules/,
-        loader:  'file?name=[name].[ext]',
       },
       {
         test:    /\.elm$/,
@@ -43,10 +44,4 @@ module.exports = {
 
     noParse: /\.elm$/,
   },
-
-  devServer: {
-    inline: true,
-    stats: { colors: true },
-  },
-
-};
+}
