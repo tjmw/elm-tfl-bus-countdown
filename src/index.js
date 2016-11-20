@@ -13,8 +13,14 @@ const hub = $.connection.predictionsRoomHub;
 
 // Push notification callback
 hub.client.showPredictions = predictions => {
-  const predictionStrings = predictions.map( p => {
-    return p["LineName"] + ": " + p["DestinationName"] + " (" + p["TimeToStation"] + ")";
+  console.log(predictions[0].Timestamp);
+  const predictionStrings = predictions.sort( (a,b) => {
+    if (a.TimeToStation > b.TimeToStation) return 1;
+    if (a.TimeToStation < b.TimeToStation) return -1;
+    return 0;
+  }).map( p => {
+    const dueMinutes = Math.floor(p.TimeToStation/60);
+    return p.LineName + ": " + p.DestinationName + " (" + dueMinutes + " mins) [" + p.VehicleId + "]";
   });
 
   console.log(predictions);
@@ -23,6 +29,6 @@ hub.client.showPredictions = predictions => {
 
 $.connection.hub.start().done(function() {
   // Hardcode stop for now
-  const lineRooms = [{ "NaptanId": "490003989Z" }];
+  const lineRooms = [{ "NaptanId": "490015053C" }];
   hub.server.addLineRooms(lineRooms)
 });
