@@ -1,3 +1,5 @@
+var webpack = require("webpack");
+
 module.exports = {
   context: __dirname + "/src",
   entry: {
@@ -44,4 +46,12 @@ module.exports = {
 
     noParse: /\.elm$/,
   },
+  plugins: [
+    new webpack.ProvidePlugin({
+      $: "jquery",
+      jQuery: "jquery",
+      "window.$": "jquery",
+      "window.jQuery": "jquery"
+    })
+  ]
 }
