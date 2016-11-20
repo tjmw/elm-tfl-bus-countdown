@@ -24,7 +24,13 @@ type Msg
 view : Model -> Html Msg
 view model =
     div []
-        [ text (String.join ", " model) ]
+        (List.map drawPrediction model)
+        --[ text (String.join ", " model) ]
+
+drawPrediction : String -> Html Msg
+drawPrediction prediction =
+  div []
+      [ text prediction ]
 
 -- UPDATE
 
