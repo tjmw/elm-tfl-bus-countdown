@@ -1,12 +1,15 @@
 module Main exposing (..)
 
-import Html exposing (Html, div, text, button, input)
+import Html exposing (Html, div, span, text, button, input)
 import Html.App
 import Html.Events exposing (onClick, onInput)
+import Json.Encode as Json
 import String
 
 import Model exposing (Model, emptyModel)
-import Ports exposing(registerForPredictions, predictions)
+import Ports exposing (registerForPredictions, predictions)
+import Prediction exposing (Prediction)
+import PredictionDecoder exposing (decodePredictions)
 
 -- MODEL
 
@@ -20,7 +23,7 @@ type Msg
     = NoOp
     | UpdateNaptanId String
     | RegisterForPredictions
-    | Predictions (List String)
+    | Predictions Json.Value
 
 -- VIEW
 
@@ -32,10 +35,14 @@ view model =
         , div [] (List.map drawPrediction model.predictions)
         ]
 
-drawPrediction : String -> Html Msg
+drawPrediction : Prediction -> Html Msg
 drawPrediction prediction =
   div []
-      [ text prediction ]
+      [ span [] [ text prediction.lineName ]
+      , span [] [ text prediction.destinationName ]
+      , span [] [ text <| toString prediction.timeToStation ]
+      , span [] [ text prediction.vehicleId ]
+      ]
 
 -- UPDATE
 
@@ -48,8 +55,8 @@ update msg model =
           ( { model | naptanId = newNaptanId }, Cmd.none )
         RegisterForPredictions ->
           ( model, registerForPredictions model.naptanId )
-        Predictions newPredictions ->
-          ( { model | predictions = newPredictions }, Cmd.none )
+        Predictions newPredictionsJson ->
+          ( { model | predictions = (decodePredictions newPredictionsJson) }, Cmd.none )
 
 -- SUBSCRIPTIONS
 
