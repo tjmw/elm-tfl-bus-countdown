@@ -11,6 +11,14 @@ $.connection.hub.url = "https://push-api.tfl.gov.uk/signalr/hubs/signalr";
 
 const hub = $.connection.predictionsRoomHub;
 
+elmApp.ports.registerForPredictions.subscribe(function(naptanId) {
+  $.connection.hub.start().done(function() {
+    const lineRooms = [{ "NaptanId": naptanId }];
+    hub.server.addLineRooms(lineRooms)
+  });
+});
+
+
 // Push notification callback
 hub.client.showPredictions = predictions => {
   console.log(predictions[0].Timestamp);
@@ -26,9 +34,3 @@ hub.client.showPredictions = predictions => {
   console.log(predictions);
   elmApp.ports.predictions.send(predictionStrings);
 }
-
-$.connection.hub.start().done(function() {
-  // Hardcode stop for now
-  const lineRooms = [{ "NaptanId": "490015053C" }];
-  hub.server.addLineRooms(lineRooms)
-});
