@@ -1,20 +1,18 @@
-port module Main exposing (..)
+module Main exposing (..)
 
 import Html exposing (Html, div, text, button, input)
 import Html.App
 import Html.Events exposing (onClick, onInput)
 import String
 
--- MODEL
+import Model exposing (Model, emptyModel)
+import Ports exposing(registerForPredictions, predictions)
 
-type alias Model =
-  { naptanId : String
-  , predictions : List String
-  }
+-- MODEL
 
 init : ( Model, Cmd Msg )
 init =
-    ( Model "" [], Cmd.none )
+    ( emptyModel, Cmd.none )
 
 -- MESSAGES
 
@@ -54,9 +52,6 @@ update msg model =
           ( { model | predictions = newPredictions }, Cmd.none )
 
 -- SUBSCRIPTIONS
-
-port registerForPredictions : String -> Cmd msg
-port predictions : (List String -> msg) -> Sub msg
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
