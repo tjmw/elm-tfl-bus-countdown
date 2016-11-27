@@ -1,6 +1,6 @@
 module Main exposing (..)
 
-import Html exposing (Html, div, span, text, button, input)
+import Html exposing (Html, div, span, text, button, input, table, tr, td)
 import Html.App
 import Html.Events exposing (onClick, onInput)
 import Json.Encode as Json
@@ -32,16 +32,16 @@ view model =
     div []
         [ input [ onInput UpdateNaptanId ] []
         , button [ onClick RegisterForPredictions ] [ text "Register" ]
-        , div [] (List.map drawPrediction model.predictions)
+        , table [] (List.map drawPrediction model.predictions)
         ]
 
 drawPrediction : Prediction -> Html Msg
 drawPrediction prediction =
-  div []
-      [ span [] [ text prediction.lineName ]
-      , span [] [ text prediction.destinationName ]
-      , span [] [ text <| toString prediction.timeToStation ]
-      , span [] [ text prediction.vehicleId ]
+  tr []
+      [ td [] [ text prediction.lineName ]
+      , td [] [ text prediction.destinationName ]
+      , td [] [ text <| toString prediction.timeToStation ]
+      , td [] [ text prediction.vehicleId ]
       ]
 
 -- UPDATE
