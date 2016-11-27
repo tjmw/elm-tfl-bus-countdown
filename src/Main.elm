@@ -29,10 +29,13 @@ type Msg
 
 view : Model -> Html Msg
 view model =
+  let
+    sortedPredictions = List.sortBy .timeToStation model.predictions
+  in
     div []
         [ input [ onInput UpdateNaptanId ] []
         , button [ onClick RegisterForPredictions ] [ text "Register" ]
-        , table [] (List.map drawPrediction model.predictions)
+        , table [] (List.map drawPrediction sortedPredictions)
         ]
 
 drawPrediction : Prediction -> Html Msg
