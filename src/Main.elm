@@ -4,12 +4,16 @@ import Dict exposing(Dict)
 import Html exposing (Html, div, span, text, button, input, table, tr, td)
 import Html.App
 import Html.Events exposing (onClick, onInput)
+import Http
 import Json.Encode as Json
 import String
+import Task exposing (Task)
 
 import Model exposing (Model, emptyModel)
 import Ports exposing (registerForLivePredictions, predictions)
 import Prediction exposing (Prediction, secondsToMinutes)
+import PredictionDecoder exposing (decodePredictions, initialPredictionsDecoder)
+import PredictionsFetcher exposing (fetchInitialPredictions)
 import PredictionsUpdater exposing (updatePredictions)
 
 -- MODEL
@@ -23,7 +27,9 @@ init =
 type Msg
     = NoOp
     | UpdateNaptanId String
-    | RegisterForLivePredictions
+    | FetchInitialPredictions
+    | InitialPredictionsError String
+    | InitialPredictionsSuccess (List Prediction)
     | Predictions Json.Value
 
 -- VIEW
@@ -35,7 +41,7 @@ view model =
   in
     div []
         [ input [ onInput UpdateNaptanId ] []
-        , button [ onClick RegisterForLivePredictions ] [ text "Register" ]
+        , button [ onClick FetchInitialPredictions ] [ text "Go" ]
         , table [] (List.map drawPrediction sortedPredictions)
         ]
 
@@ -62,15 +68,23 @@ formatTime seconds =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    case msg of
-        NoOp ->
-          ( model, Cmd.none )
-        UpdateNaptanId newNaptanId ->
-          ( { model | naptanId = newNaptanId }, Cmd.none )
-        RegisterForLivePredictions ->
-          ( model, registerForLivePredictions model.naptanId )
-        Predictions newPredictionsJson ->
-          ( updatePredictions model newPredictionsJson, Cmd.none )
+  case msg of
+    NoOp ->
+      ( model, Cmd.none )
+    UpdateNaptanId newNaptanId ->
+      ( { model | naptanId = newNaptanId }, Cmd.none )
+    FetchInitialPredictions ->
+      let
+        url =
+          "https://api.tfl.gov.uk/StopPoint/" ++ model.naptanId ++ "/Arrivals?mode=bus"
+      in
+        ( model, Http.get initialPredictionsDecoder url |> Task.mapError toString |> Task.perform InitialPredictionsError InitialPredictionsSuccess )
+    InitialPredictionsSuccess listOfPredictions ->
+      ( updatePredictions model listOfPredictions, registerForLivePredictions model.naptanId )
+    InitialPredictionsError message ->
+      (model, Cmd.none)
+    Predictions newPredictionsJson ->
+      ( updatePredictions model <| decodePredictions newPredictionsJson, Cmd.none )
 
 -- SUBSCRIPTIONS
 

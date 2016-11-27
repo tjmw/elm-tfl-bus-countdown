@@ -18,7 +18,6 @@ elmApp.ports.registerForLivePredictions.subscribe(function(naptanId) {
   });
 });
 
-
 // Push notification callback
 hub.client.showPredictions = predictions => {
   console.log(predictions);

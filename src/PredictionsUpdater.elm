@@ -3,14 +3,15 @@ module PredictionsUpdater exposing (updatePredictions)
 import Dict exposing (Dict)
 import Json.Encode as Json
 import List
+
 import Model exposing (Model)
+import Prediction exposing (Prediction)
 import PredictionDecoder exposing (decodePredictions)
 
-updatePredictions : Model -> Json.Value -> Model
-updatePredictions model json =
+updatePredictions : Model -> (List Prediction) -> Model
+updatePredictions model listOfPredictions =
   let
-    decodedPredictions = decodePredictions json
-    newpredictionsDict = listToDict .vehicleId decodedPredictions
+    newpredictionsDict = listToDict .vehicleId listOfPredictions
     predictionsDict = Dict.union newpredictionsDict model.predictions
   in
     { model | predictions = predictionsDict }
