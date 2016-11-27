@@ -8,7 +8,7 @@ import Json.Encode as Json
 import String
 
 import Model exposing (Model, emptyModel)
-import Ports exposing (registerForPredictions, predictions)
+import Ports exposing (registerForLivePredictions, predictions)
 import Prediction exposing (Prediction, secondsToMinutes)
 import PredictionsUpdater exposing (updatePredictions)
 
@@ -23,7 +23,7 @@ init =
 type Msg
     = NoOp
     | UpdateNaptanId String
-    | RegisterForPredictions
+    | RegisterForLivePredictions
     | Predictions Json.Value
 
 -- VIEW
@@ -35,7 +35,7 @@ view model =
   in
     div []
         [ input [ onInput UpdateNaptanId ] []
-        , button [ onClick RegisterForPredictions ] [ text "Register" ]
+        , button [ onClick RegisterForLivePredictions ] [ text "Register" ]
         , table [] (List.map drawPrediction sortedPredictions)
         ]
 
@@ -67,8 +67,8 @@ update msg model =
           ( model, Cmd.none )
         UpdateNaptanId newNaptanId ->
           ( { model | naptanId = newNaptanId }, Cmd.none )
-        RegisterForPredictions ->
-          ( model, registerForPredictions model.naptanId )
+        RegisterForLivePredictions ->
+          ( model, registerForLivePredictions model.naptanId )
         Predictions newPredictionsJson ->
           ( updatePredictions model newPredictionsJson, Cmd.none )
 

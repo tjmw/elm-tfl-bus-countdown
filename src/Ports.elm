@@ -1,6 +1,6 @@
-port module Ports exposing(registerForPredictions, predictions)
+port module Ports exposing(registerForLivePredictions, predictions)
 
 import Json.Encode as Json
 
-port registerForPredictions : String -> Cmd msg
+port registerForLivePredictions : String -> Cmd msg
 port predictions : (Json.Value -> msg) -> Sub msg
