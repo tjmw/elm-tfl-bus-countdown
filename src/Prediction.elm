@@ -1,4 +1,4 @@
-module Prediction exposing (Prediction)
+module Prediction exposing (Prediction, secondsToMinutes)
 
 type alias Prediction =
   {
@@ -7,3 +7,7 @@ type alias Prediction =
     destinationName : String,
     vehicleId : String
   }
+
+secondsToMinutes : Int -> Int
+secondsToMinutes seconds =
+  seconds // 60

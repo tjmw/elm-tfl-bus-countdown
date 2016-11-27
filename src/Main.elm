@@ -8,7 +8,7 @@ import String
 
 import Model exposing (Model, emptyModel)
 import Ports exposing (registerForPredictions, predictions)
-import Prediction exposing (Prediction)
+import Prediction exposing (Prediction, secondsToMinutes)
 import PredictionDecoder exposing (decodePredictions)
 
 -- MODEL
@@ -43,9 +43,19 @@ drawPrediction prediction =
   tr []
       [ td [] [ text prediction.lineName ]
       , td [] [ text prediction.destinationName ]
-      , td [] [ text <| toString prediction.timeToStation ]
+      , td [] [ text <| formatTime prediction.timeToStation ]
       , td [] [ text prediction.vehicleId ]
       ]
+
+formatTime : Int -> String
+formatTime seconds =
+  let
+    minutes = secondsToMinutes <| seconds
+  in
+     case minutes of
+       0 -> "due"
+       1 -> (toString minutes) ++ " min"
+       _ -> (toString minutes) ++ " mins"
 
 -- UPDATE
 
