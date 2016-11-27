@@ -9,7 +9,7 @@ import String
 import Model exposing (Model, emptyModel)
 import Ports exposing (registerForPredictions, predictions)
 import Prediction exposing (Prediction, secondsToMinutes)
-import PredictionDecoder exposing (decodePredictions)
+import PredictionsUpdater exposing (updatePredictions)
 
 -- MODEL
 
@@ -69,7 +69,7 @@ update msg model =
         RegisterForPredictions ->
           ( model, registerForPredictions model.naptanId )
         Predictions newPredictionsJson ->
-          ( { model | predictions = (decodePredictions newPredictionsJson) }, Cmd.none )
+          ( updatePredictions model newPredictionsJson, Cmd.none )
 
 -- SUBSCRIPTIONS
 
