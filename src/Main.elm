@@ -1,5 +1,6 @@
 module Main exposing (..)
 
+import Dict exposing(Dict)
 import Html exposing (Html, div, span, text, button, input, table, tr, td)
 import Html.App
 import Html.Events exposing (onClick, onInput)
@@ -30,7 +31,7 @@ type Msg
 view : Model -> Html Msg
 view model =
   let
-    sortedPredictions = List.sortBy .timeToStation model.predictions
+    sortedPredictions = List.sortBy .timeToStation <| Dict.values model.predictions
   in
     div []
         [ input [ onInput UpdateNaptanId ] []
