@@ -4,6 +4,7 @@ import Dict exposing(Dict)
 import Html exposing (Html, div, span, text, button, input, table, tr, td)
 import Html.App
 import Html.Events exposing (onClick, onInput)
+import Html.Attributes exposing (placeholder)
 import Http
 import Json.Encode as Json
 import String
@@ -40,7 +41,7 @@ view model =
     sortedPredictions = List.sortBy .timeToStation <| Dict.values model.predictions
   in
     div []
-        [ input [ onInput UpdateNaptanId ] []
+        [ input [ onInput UpdateNaptanId, placeholder "Naptan ID" ] []
         , button [ onClick FetchInitialPredictions ] [ text "Go" ]
         , table [] (List.map drawPrediction sortedPredictions)
         ]
