@@ -78,7 +78,10 @@ update msg model =
         url =
           "https://api.tfl.gov.uk/StopPoint/" ++ model.naptanId ++ "/Arrivals?mode=bus"
       in
-        ( model, Http.get initialPredictionsDecoder url |> Task.mapError toString |> Task.perform InitialPredictionsError InitialPredictionsSuccess )
+        ( model,
+          Http.get initialPredictionsDecoder url
+            |> Task.mapError toString
+            |> Task.perform InitialPredictionsError InitialPredictionsSuccess )
     InitialPredictionsSuccess listOfPredictions ->
       ( updatePredictions model listOfPredictions, registerForLivePredictions model.naptanId )
     InitialPredictionsError message ->
