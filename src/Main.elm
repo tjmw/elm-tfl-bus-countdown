@@ -82,7 +82,10 @@ update msg model =
     InitialPredictionsSuccess listOfPredictions ->
       ( updatePredictions model listOfPredictions, registerForLivePredictions model.naptanId )
     InitialPredictionsError message ->
-      (model, Cmd.none)
+      let
+        _ = Debug.log "Predictions request failed" message
+      in
+        (model, Cmd.none)
     Predictions newPredictionsJson ->
       ( updatePredictions model <| decodePredictions newPredictionsJson, Cmd.none )
 
