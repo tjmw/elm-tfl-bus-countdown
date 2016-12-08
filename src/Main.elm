@@ -44,7 +44,17 @@ type Msg
 view : Model -> Html Msg
 view model =
   div []
-      [ button [ onClick RequestGeoLocation ] [ text "Show nearby stops" ] ]
+      [ button [ onClick RequestGeoLocation ] [ text "Show nearby stops" ]
+      , renderStops model
+      ]
+
+renderStops : Model -> Html Msg
+renderStops model =
+  div [] (List.map renderStop model.possibleStops)
+
+renderStop : Stop -> Html Msg
+renderStop stop =
+  div [] [ text stop.commonName ]
 
 oldView : Model -> Html Msg
 oldView model =
@@ -122,15 +132,15 @@ update msg model =
           Http.get url stopPointsDecoder
             |> Http.send handleStopsResponse )
 
-    FetchStopsError message ->
-      let
-        _ = Debug.log message
-      in
-         ( model, Cmd.none )
-
     FetchStopsSuccess stopsDocument ->
       let
-        _ = Debug.log "Success"
+        _ = Debug.log "Success" stopsDocument
+      in
+         ( { model | possibleStops = stopsDocument.stopPoints }, Cmd.none )
+
+    FetchStopsError message ->
+      let
+        _ = Debug.log "error" message
       in
          ( model, Cmd.none )
 
