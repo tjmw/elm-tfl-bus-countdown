@@ -78,9 +78,8 @@ update msg model =
           "https://api.tfl.gov.uk/StopPoint/" ++ model.naptanId ++ "/Arrivals?mode=bus"
       in
         ( model,
-          Http.get initialPredictionsDecoder url
-            |> Task.mapError toString
-            |> Task.perform InitialPredictionsError InitialPredictionsSuccess )
+          Http.get url initialPredictionsDecoder
+            |> Http.send processPredictionsResponse )
     InitialPredictionsSuccess listOfPredictions ->
       ( updatePredictions model listOfPredictions, registerForLivePredictions model.naptanId )
     InitialPredictionsError message ->
@@ -90,6 +89,12 @@ update msg model =
         (model, Cmd.none)
     Predictions newPredictionsJson ->
       ( updatePredictions model <| decodePredictions newPredictionsJson, Cmd.none )
+
+processPredictionsResponse : Result Http.Error (List Prediction) -> Msg
+processPredictionsResponse result =
+  case result of
+    Ok prediction -> InitialPredictionsSuccess prediction
+    Err msg -> InitialPredictionsError (toString msg)
 
 -- SUBSCRIPTIONS
 
