@@ -1,10 +1,11 @@
 var webpack = require("webpack");
+var CopyWebpackPlugin = require('copy-webpack-plugin');
 
 module.exports = {
   context: __dirname + "/src",
   entry: {
     javascript: "./index.js",
-    html: "./index.html",
+    html: "./index.html"
   },
   output: {
     filename: "app.js",
@@ -21,13 +22,6 @@ module.exports = {
       {
         test: /\.html$/,
         loader: "file?name=[name].[ext]",
-      },
-      {
-        test: /\.(css|scss)$/,
-        loaders: [
-          'style-loader',
-          'css-loader',
-        ]
       },
       {
         test:    /\.elm$/,
@@ -52,6 +46,9 @@ module.exports = {
       jQuery: "jquery",
       "window.$": "jquery",
       "window.jQuery": "jquery"
-    })
+    }),
+    new CopyWebpackPlugin([
+      { from: 'css/main.css', to: "css/main.css" }
+    ])
   ]
-}
+};
