@@ -29,7 +29,7 @@ init =
 
 type Msg
     = NoOp
-    | UpdateNaptanId String
+    | SelectStop String
     | RequestGeoLocation
     | InitialPredictionsError String
     | InitialPredictionsSuccess (List Prediction)
@@ -59,7 +59,7 @@ renderStops model =
 
 renderStop : Stop -> Html Msg
 renderStop stop =
-  div [ class "stop", onClick (UpdateNaptanId stop.naptanId) ]
+  div [ class "stop", onClick (SelectStop stop.naptanId) ]
     [ span [] [ text stop.naptanId ]
     , span [] [ text stop.indicator ]
     , span [] [ text stop.commonName ]
@@ -106,61 +106,93 @@ update msg model =
     NoOp ->
       ( model, Cmd.none )
 
-    UpdateNaptanId newNaptanId ->
-      let
-        url =
-          "https://api.tfl.gov.uk/StopPoint/" ++ newNaptanId ++ "/Arrivals?mode=bus"
-      in
-        ( { model | naptanId = newNaptanId },
-          Http.get url initialPredictionsDecoder
-            |> Http.send handlePredictionsResponse )
+    SelectStop newNaptanId ->
+      model |> selectStop newNaptanId
 
     InitialPredictionsSuccess listOfPredictions ->
-      ( updatePredictions model listOfPredictions, registerForLivePredictions model.naptanId )
+      model |> handlePredictions listOfPredictions
 
     InitialPredictionsError message ->
-      let
-        _ = Debug.log "Predictions request failed" message
-      in
-        (model, Cmd.none)
+      model |> handlePredictionsError message
 
     Predictions newPredictionsJson ->
-      ( updatePredictions model <| decodePredictions newPredictionsJson, Cmd.none )
+      model |> handlePredictionsUpdate newPredictionsJson
 
     RequestGeoLocation ->
-      let
-        unsubscribeCmd = if model.naptanId /= "" then deregisterFromLivePredictions model.naptanId
-                         else Cmd.none
-
-        cmd = Cmd.batch [ unsubscribeCmd, (requestGeoLocation "") ]
-      in
-        ( emptyModel, cmd )
+      model |> resetApp
 
     GeoLocation geoLocationJson ->
-      let
-        geoLocation = decodeGeoLocation geoLocationJson
-        _ = Debug.log "GeoLocation" geoLocation.lat
-        url =
-          "https://api.tfl.gov.uk/StopPoint?lat=" ++ (toString geoLocation.lat) ++ "&lon=" ++ (toString geoLocation.long) ++ "&stopTypes=NaptanPublicBusCoachTram&radius=200&useStopPointHierarchy=True&returnLines=True&app_id=&app_key=&modes=bus"
-      in
-        ( model,
-          Http.get url stopPointsDecoder
-            |> Http.send handleStopsResponse )
+      model |> fetchNearbyStops geoLocationJson
 
     FetchStopsSuccess stopsDocument ->
-      let
-        _ = Debug.log "Success" stopsDocument
-      in
-         ( { model | possibleStops = stopsDocument.stopPoints }, Cmd.none )
+      model |> updateStops stopsDocument
 
     FetchStopsError message ->
-      let
-        _ = Debug.log "error" message
-      in
-         ( model, Cmd.none )
+      model |> handleFetchStopsError message
 
     BackToStops ->
-      ( { model | predictions = Dict.empty, naptanId = "" }, deregisterFromLivePredictions model.naptanId )
+      model |> resetSelectedStop
+
+selectStop : String -> Model -> (Model, Cmd Msg)
+selectStop newNaptanId model =
+  let
+    url =
+      "https://api.tfl.gov.uk/StopPoint/" ++ newNaptanId ++ "/Arrivals?mode=bus"
+  in
+    ( { model | naptanId = newNaptanId },
+      Http.get url initialPredictionsDecoder
+        |> Http.send handlePredictionsResponse )
+
+handlePredictions : (List Prediction) -> Model -> (Model, Cmd Msg)
+handlePredictions listOfPredictions model =
+  ( updatePredictions model listOfPredictions, registerForLivePredictions model.naptanId )
+
+handlePredictionsError : String -> Model -> (Model, Cmd Msg)
+handlePredictionsError message model =
+  let
+    _ = Debug.log "Predictions request failed" message
+  in
+    (model, Cmd.none)
+
+handlePredictionsUpdate : Json.Value -> Model -> (Model, Cmd Msg)
+handlePredictionsUpdate newPredictionsJson model =
+  ( updatePredictions model <| decodePredictions newPredictionsJson, Cmd.none )
+
+resetApp : Model -> (Model, Cmd Msg)
+resetApp model =
+  let
+    unsubscribeCmd = if model.naptanId /= "" then deregisterFromLivePredictions model.naptanId
+                      else Cmd.none
+
+    cmd = Cmd.batch [ unsubscribeCmd, (requestGeoLocation "") ]
+  in
+    ( emptyModel, cmd )
+
+fetchNearbyStops : Json.Value -> Model -> (Model, Cmd Msg)
+fetchNearbyStops geoLocationJson model =
+  let
+    geoLocation = decodeGeoLocation geoLocationJson
+    url =
+      "https://api.tfl.gov.uk/StopPoint?lat=" ++ (toString geoLocation.lat) ++ "&lon=" ++ (toString geoLocation.long) ++ "&stopTypes=NaptanPublicBusCoachTram&radius=200&useStopPointHierarchy=True&returnLines=True&app_id=&app_key=&modes=bus"
+  in
+    ( model,
+      Http.get url stopPointsDecoder
+        |> Http.send handleStopsResponse )
+
+updateStops : StopsDocument -> Model -> (Model, Cmd Msg)
+updateStops stopsDocument model =
+  ( { model | possibleStops = stopsDocument.stopPoints }, Cmd.none )
+
+handleFetchStopsError : String -> Model -> (Model, Cmd Msg)
+handleFetchStopsError message model =
+  let
+    _ = Debug.log "error" message
+  in
+      ( model, Cmd.none )
+
+resetSelectedStop : Model -> (Model, Cmd Msg)
+resetSelectedStop model =
+  ( { model | predictions = Dict.empty, naptanId = "" }, deregisterFromLivePredictions model.naptanId )
 
 handleStopsResponse : Result Http.Error (StopsDocument) -> Msg
 handleStopsResponse result =
