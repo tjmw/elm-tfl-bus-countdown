@@ -1,7 +1,7 @@
 module GeoLocation exposing (GeoLocation)
 
+
 type alias GeoLocation =
-  {
-    lat : Float,
-    long: Float
-  }
+    { lat : Float
+    , long : Float
+    }

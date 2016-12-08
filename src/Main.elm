@@ -1,6 +1,6 @@
 module Main exposing (..)
 
-import Dict exposing(Dict)
+import Dict exposing (Dict)
 import Html exposing (Html, div, span, text, button, input, table, tr, td)
 import Html.Events exposing (onClick, onInput)
 import Html.Attributes exposing (placeholder, class)
@@ -8,7 +8,6 @@ import Http
 import Json.Encode as Json
 import String
 import Task exposing (Task)
-
 import Model exposing (Model, emptyModel)
 import Ports exposing (registerForLivePredictions, deregisterFromLivePredictions, predictions, requestGeoLocation, geoLocation)
 import GeoLocationDecoder exposing (decodeGeoLocation)
@@ -19,13 +18,18 @@ import Stop exposing (Stop)
 import StopsDocument exposing (StopsDocument)
 import StopPointsDecoder exposing (stopPointsDecoder)
 
+
 -- MODEL
+
 
 init : ( Model, Cmd Msg )
 init =
     ( emptyModel, Cmd.none )
 
+
+
 -- MESSAGES
+
 
 type Msg
     = NoOp
@@ -39,183 +43,235 @@ type Msg
     | FetchStopsSuccess StopsDocument
     | BackToStops
 
+
+
 -- VIEW
+
 
 view : Model -> Html Msg
 view model =
-  div []
-      [ button [ onClick RequestGeoLocation ] [ text "Show nearby stops" ]
-      , if model.naptanId /= "" then
-          renderPredictions model
-        else if model.possibleStops /= [] then
-          renderStops model
-        else
-          text ""
-      ]
+    div []
+        [ button [ onClick RequestGeoLocation ] [ text "Show nearby stops" ]
+        , if model.naptanId /= "" then
+            renderPredictions model
+          else if model.possibleStops /= [] then
+            renderStops model
+          else
+            text ""
+        ]
+
 
 renderStops : Model -> Html Msg
 renderStops model =
-  div [] (List.map renderStop model.possibleStops)
+    div [] (List.map renderStop model.possibleStops)
+
 
 renderStop : Stop -> Html Msg
 renderStop stop =
-  div [ class "stop", onClick (SelectStop stop.naptanId) ]
-    [ span [] [ text stop.naptanId ]
-    , span [] [ text stop.indicator ]
-    , span [] [ text stop.commonName ]
-    ]
+    div [ class "stop", onClick (SelectStop stop.naptanId) ]
+        [ span [] [ text stop.naptanId ]
+        , span [] [ text stop.indicator ]
+        , span [] [ text stop.commonName ]
+        ]
+
 
 renderBackToStops : Html Msg
 renderBackToStops =
-  div [ onClick BackToStops ] [ text "Back to stops" ]
+    div [ onClick BackToStops ] [ text "Back to stops" ]
+
 
 renderPredictions : Model -> Html Msg
 renderPredictions model =
-  let
-    sortedPredictions = List.sortBy .timeToStation <| Dict.values model.predictions
-  in
-    div [] [
-      table [] (List.map renderPrediction sortedPredictions)
-      , renderBackToStops
-    ]
+    let
+        sortedPredictions =
+            List.sortBy .timeToStation <| Dict.values model.predictions
+    in
+        div []
+            [ table [] (List.map renderPrediction sortedPredictions)
+            , renderBackToStops
+            ]
+
 
 renderPrediction : Prediction -> Html Msg
 renderPrediction prediction =
-  tr []
-      [ td [] [ text prediction.lineName ]
-      , td [] [ text prediction.destinationName ]
-      , td [] [ text <| formatTime prediction.timeToStation ]
-      , td [] [ text prediction.vehicleId ]
-      ]
+    tr []
+        [ td [] [ text prediction.lineName ]
+        , td [] [ text prediction.destinationName ]
+        , td [] [ text <| formatTime prediction.timeToStation ]
+        , td [] [ text prediction.vehicleId ]
+        ]
+
 
 formatTime : Int -> String
 formatTime seconds =
-  let
-    minutes = secondsToMinutes <| seconds
-  in
-     case minutes of
-       0 -> "due"
-       1 -> (toString minutes) ++ " min"
-       _ -> (toString minutes) ++ " mins"
+    let
+        minutes =
+            secondsToMinutes <| seconds
+    in
+        case minutes of
+            0 ->
+                "due"
+
+            1 ->
+                (toString minutes) ++ " min"
+
+            _ ->
+                (toString minutes) ++ " mins"
+
+
 
 -- UPDATE
 
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-  case msg of
-    NoOp ->
-      ( model, Cmd.none )
+    case msg of
+        NoOp ->
+            ( model, Cmd.none )
 
-    SelectStop newNaptanId ->
-      model |> selectStop newNaptanId
+        SelectStop newNaptanId ->
+            model |> selectStop newNaptanId
 
-    InitialPredictionsSuccess listOfPredictions ->
-      model |> handlePredictions listOfPredictions
+        InitialPredictionsSuccess listOfPredictions ->
+            model |> handlePredictions listOfPredictions
 
-    InitialPredictionsError message ->
-      model |> handlePredictionsError message
+        InitialPredictionsError message ->
+            model |> handlePredictionsError message
 
-    Predictions newPredictionsJson ->
-      model |> handlePredictionsUpdate newPredictionsJson
+        Predictions newPredictionsJson ->
+            model |> handlePredictionsUpdate newPredictionsJson
 
-    RequestGeoLocation ->
-      model |> resetApp
+        RequestGeoLocation ->
+            model |> resetApp
 
-    GeoLocation geoLocationJson ->
-      model |> fetchNearbyStops geoLocationJson
+        GeoLocation geoLocationJson ->
+            model |> fetchNearbyStops geoLocationJson
 
-    FetchStopsSuccess stopsDocument ->
-      model |> updateStops stopsDocument
+        FetchStopsSuccess stopsDocument ->
+            model |> updateStops stopsDocument
 
-    FetchStopsError message ->
-      model |> handleFetchStopsError message
+        FetchStopsError message ->
+            model |> handleFetchStopsError message
 
-    BackToStops ->
-      model |> resetSelectedStop
+        BackToStops ->
+            model |> resetSelectedStop
 
-selectStop : String -> Model -> (Model, Cmd Msg)
+
+selectStop : String -> Model -> ( Model, Cmd Msg )
 selectStop newNaptanId model =
-  let
-    url =
-      "https://api.tfl.gov.uk/StopPoint/" ++ newNaptanId ++ "/Arrivals?mode=bus"
-  in
-    ( { model | naptanId = newNaptanId },
-      Http.get url initialPredictionsDecoder
-        |> Http.send handlePredictionsResponse )
+    let
+        url =
+            "https://api.tfl.gov.uk/StopPoint/" ++ newNaptanId ++ "/Arrivals?mode=bus"
+    in
+        ( { model | naptanId = newNaptanId }
+        , Http.get url initialPredictionsDecoder
+            |> Http.send handlePredictionsResponse
+        )
 
-handlePredictions : (List Prediction) -> Model -> (Model, Cmd Msg)
+
+handlePredictions : List Prediction -> Model -> ( Model, Cmd Msg )
 handlePredictions listOfPredictions model =
-  ( updatePredictions model listOfPredictions, registerForLivePredictions model.naptanId )
+    ( updatePredictions model listOfPredictions, registerForLivePredictions model.naptanId )
 
-handlePredictionsError : String -> Model -> (Model, Cmd Msg)
+
+handlePredictionsError : String -> Model -> ( Model, Cmd Msg )
 handlePredictionsError message model =
-  let
-    _ = Debug.log "Predictions request failed" message
-  in
-    (model, Cmd.none)
+    let
+        _ =
+            Debug.log "Predictions request failed" message
+    in
+        ( model, Cmd.none )
 
-handlePredictionsUpdate : Json.Value -> Model -> (Model, Cmd Msg)
+
+handlePredictionsUpdate : Json.Value -> Model -> ( Model, Cmd Msg )
 handlePredictionsUpdate newPredictionsJson model =
-  ( updatePredictions model <| decodePredictions newPredictionsJson, Cmd.none )
+    ( updatePredictions model <| decodePredictions newPredictionsJson, Cmd.none )
 
-resetApp : Model -> (Model, Cmd Msg)
+
+resetApp : Model -> ( Model, Cmd Msg )
 resetApp model =
-  let
-    unsubscribeCmd = if model.naptanId /= "" then deregisterFromLivePredictions model.naptanId
-                      else Cmd.none
+    let
+        unsubscribeCmd =
+            if model.naptanId /= "" then
+                deregisterFromLivePredictions model.naptanId
+            else
+                Cmd.none
 
-    cmd = Cmd.batch [ unsubscribeCmd, (requestGeoLocation "") ]
-  in
-    ( emptyModel, cmd )
+        cmd =
+            Cmd.batch [ unsubscribeCmd, (requestGeoLocation "") ]
+    in
+        ( emptyModel, cmd )
 
-fetchNearbyStops : Json.Value -> Model -> (Model, Cmd Msg)
+
+fetchNearbyStops : Json.Value -> Model -> ( Model, Cmd Msg )
 fetchNearbyStops geoLocationJson model =
-  let
-    geoLocation = decodeGeoLocation geoLocationJson
-    url =
-      "https://api.tfl.gov.uk/StopPoint?lat=" ++ (toString geoLocation.lat) ++ "&lon=" ++ (toString geoLocation.long) ++ "&stopTypes=NaptanPublicBusCoachTram&radius=200&useStopPointHierarchy=True&returnLines=True&app_id=&app_key=&modes=bus"
-  in
-    ( model,
-      Http.get url stopPointsDecoder
-        |> Http.send handleStopsResponse )
+    let
+        geoLocation =
+            decodeGeoLocation geoLocationJson
 
-updateStops : StopsDocument -> Model -> (Model, Cmd Msg)
+        url =
+            "https://api.tfl.gov.uk/StopPoint?lat=" ++ (toString geoLocation.lat) ++ "&lon=" ++ (toString geoLocation.long) ++ "&stopTypes=NaptanPublicBusCoachTram&radius=200&useStopPointHierarchy=True&returnLines=True&app_id=&app_key=&modes=bus"
+    in
+        ( model
+        , Http.get url stopPointsDecoder
+            |> Http.send handleStopsResponse
+        )
+
+
+updateStops : StopsDocument -> Model -> ( Model, Cmd Msg )
 updateStops stopsDocument model =
-  ( { model | possibleStops = stopsDocument.stopPoints }, Cmd.none )
+    ( { model | possibleStops = stopsDocument.stopPoints }, Cmd.none )
 
-handleFetchStopsError : String -> Model -> (Model, Cmd Msg)
+
+handleFetchStopsError : String -> Model -> ( Model, Cmd Msg )
 handleFetchStopsError message model =
-  let
-    _ = Debug.log "error" message
-  in
-      ( model, Cmd.none )
+    let
+        _ =
+            Debug.log "error" message
+    in
+        ( model, Cmd.none )
 
-resetSelectedStop : Model -> (Model, Cmd Msg)
+
+resetSelectedStop : Model -> ( Model, Cmd Msg )
 resetSelectedStop model =
-  ( { model | predictions = Dict.empty, naptanId = "" }, deregisterFromLivePredictions model.naptanId )
+    ( { model | predictions = Dict.empty, naptanId = "" }, deregisterFromLivePredictions model.naptanId )
 
-handleStopsResponse : Result Http.Error (StopsDocument) -> Msg
+
+handleStopsResponse : Result Http.Error StopsDocument -> Msg
 handleStopsResponse result =
-  case result of
-    Ok stopsDocument -> FetchStopsSuccess stopsDocument
-    Err msg -> FetchStopsError (toString msg)
+    case result of
+        Ok stopsDocument ->
+            FetchStopsSuccess stopsDocument
+
+        Err msg ->
+            FetchStopsError (toString msg)
+
 
 handlePredictionsResponse : Result Http.Error (List Prediction) -> Msg
 handlePredictionsResponse result =
-  case result of
-    Ok prediction -> InitialPredictionsSuccess prediction
-    Err msg -> InitialPredictionsError (toString msg)
+    case result of
+        Ok prediction ->
+            InitialPredictionsSuccess prediction
+
+        Err msg ->
+            InitialPredictionsError (toString msg)
+
+
 
 -- SUBSCRIPTIONS
 
+
 subscriptions : Model -> Sub Msg
 subscriptions model =
-  Sub.batch [
-    predictions Predictions,
-    geoLocation GeoLocation
-  ]
+    Sub.batch
+        [ predictions Predictions
+        , geoLocation GeoLocation
+        ]
+
+
 
 -- MAIN
+
 
 main : Program Never Model Msg
 main =
