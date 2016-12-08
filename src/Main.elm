@@ -10,7 +10,7 @@ import String
 import Task exposing (Task)
 
 import Model exposing (Model, emptyModel)
-import Ports exposing (registerForLivePredictions, predictions)
+import Ports exposing (registerForLivePredictions, predictions, requestGeoLocation, geoLocation)
 import Prediction exposing (Prediction, secondsToMinutes)
 import PredictionDecoder exposing (decodePredictions, initialPredictionsDecoder)
 import PredictionsUpdater exposing (updatePredictions)
@@ -27,14 +27,21 @@ type Msg
     = NoOp
     | UpdateNaptanId String
     | FetchInitialPredictions
+    | RequestGeoLocation
     | InitialPredictionsError String
     | InitialPredictionsSuccess (List Prediction)
     | Predictions Json.Value
+    | GeoLocation Json.Value
 
 -- VIEW
 
 view : Model -> Html Msg
 view model =
+  div []
+      [ button [ onClick RequestGeoLocation ] [ text "Show nearby stops" ] ]
+
+oldView : Model -> Html Msg
+oldView model =
   let
     sortedPredictions = List.sortBy .timeToStation <| Dict.values model.predictions
   in
@@ -70,8 +77,10 @@ update msg model =
   case msg of
     NoOp ->
       ( model, Cmd.none )
+
     UpdateNaptanId newNaptanId ->
       ( { model | naptanId = newNaptanId }, Cmd.none )
+
     FetchInitialPredictions ->
       let
         url =
@@ -80,15 +89,27 @@ update msg model =
         ( model,
           Http.get url initialPredictionsDecoder
             |> Http.send processPredictionsResponse )
+
     InitialPredictionsSuccess listOfPredictions ->
       ( updatePredictions model listOfPredictions, registerForLivePredictions model.naptanId )
+
     InitialPredictionsError message ->
       let
         _ = Debug.log "Predictions request failed" message
       in
         (model, Cmd.none)
+
     Predictions newPredictionsJson ->
       ( updatePredictions model <| decodePredictions newPredictionsJson, Cmd.none )
+
+    RequestGeoLocation ->
+      ( model, requestGeoLocation "" )
+
+    GeoLocation geoLocation ->
+      let
+        _ = Debug.log "GeoLocation" geoLocation
+      in
+        (model, Cmd.none)
 
 processPredictionsResponse : Result Http.Error (List Prediction) -> Msg
 processPredictionsResponse result =
@@ -100,7 +121,10 @@ processPredictionsResponse result =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    predictions Predictions
+  Sub.batch [
+    predictions Predictions,
+    geoLocation GeoLocation
+  ]
 
 -- MAIN
 

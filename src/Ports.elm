@@ -1,6 +1,11 @@
-port module Ports exposing(registerForLivePredictions, predictions)
+port module Ports exposing( registerForLivePredictions, predictions, requestGeoLocation, geoLocation )
 
 import Json.Encode as Json
 
+-- Live predictions stream ports
 port registerForLivePredictions : String -> Cmd msg
 port predictions : (Json.Value -> msg) -> Sub msg
+
+-- Geo location ports
+port requestGeoLocation : String -> Cmd msg
+port geoLocation : (Json.Value -> msg) -> Sub msg
