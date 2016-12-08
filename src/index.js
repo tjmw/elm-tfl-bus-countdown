@@ -18,6 +18,23 @@ elmApp.ports.registerForLivePredictions.subscribe(function(naptanId) {
   });
 });
 
+elmApp.ports.requestGeoLocation.subscribe(() => {
+  if ("geolocation" in navigator) {
+    navigator.geolocation.getCurrentPosition((position) => {
+      const geoLocation = {
+        lat: position.coords.latitude,
+        long: position.coords.longitude
+      }
+
+      console.log(geoLocation);
+
+      elmApp.ports.geoLocation.send(geoLocation);
+    });
+  } else {
+    console.log("Geo location not available");
+  }
+});
+
 // Push notification callback
 hub.client.showPredictions = predictions => {
   console.log(predictions);
