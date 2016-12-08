@@ -100,7 +100,7 @@ subscriptions model =
 
 -- MAIN
 
-main : Program Never
+main : Program Never Model Msg
 main =
     Html.program
         { init = init
