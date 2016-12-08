@@ -13,7 +13,6 @@ import Model exposing (Model, emptyModel)
 import Ports exposing (registerForLivePredictions, predictions)
 import Prediction exposing (Prediction, secondsToMinutes)
 import PredictionDecoder exposing (decodePredictions, initialPredictionsDecoder)
-import PredictionsFetcher exposing (fetchInitialPredictions)
 import PredictionsUpdater exposing (updatePredictions)
 
 -- MODEL
