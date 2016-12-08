@@ -2,7 +2,6 @@ module Main exposing (..)
 
 import Dict exposing(Dict)
 import Html exposing (Html, div, span, text, button, input, table, tr, td)
-import Html.App
 import Html.Events exposing (onClick, onInput)
 import Html.Attributes exposing (placeholder)
 import Http
@@ -14,7 +13,6 @@ import Model exposing (Model, emptyModel)
 import Ports exposing (registerForLivePredictions, predictions)
 import Prediction exposing (Prediction, secondsToMinutes)
 import PredictionDecoder exposing (decodePredictions, initialPredictionsDecoder)
-import PredictionsFetcher exposing (fetchInitialPredictions)
 import PredictionsUpdater exposing (updatePredictions)
 
 -- MODEL
@@ -80,9 +78,8 @@ update msg model =
           "https://api.tfl.gov.uk/StopPoint/" ++ model.naptanId ++ "/Arrivals?mode=bus"
       in
         ( model,
-          Http.get initialPredictionsDecoder url
-            |> Task.mapError toString
-            |> Task.perform InitialPredictionsError InitialPredictionsSuccess )
+          Http.get url initialPredictionsDecoder
+            |> Http.send processPredictionsResponse )
     InitialPredictionsSuccess listOfPredictions ->
       ( updatePredictions model listOfPredictions, registerForLivePredictions model.naptanId )
     InitialPredictionsError message ->
@@ -93,6 +90,12 @@ update msg model =
     Predictions newPredictionsJson ->
       ( updatePredictions model <| decodePredictions newPredictionsJson, Cmd.none )
 
+processPredictionsResponse : Result Http.Error (List Prediction) -> Msg
+processPredictionsResponse result =
+  case result of
+    Ok prediction -> InitialPredictionsSuccess prediction
+    Err msg -> InitialPredictionsError (toString msg)
+
 -- SUBSCRIPTIONS
 
 subscriptions : Model -> Sub Msg
@@ -101,9 +104,9 @@ subscriptions model =
 
 -- MAIN
 
-main : Program Never
+main : Program Never Model Msg
 main =
-    Html.App.program
+    Html.program
         { init = init
         , view = view
         , update = update
