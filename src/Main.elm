@@ -3,7 +3,7 @@ module Main exposing (..)
 import Dict exposing(Dict)
 import Html exposing (Html, div, span, text, button, input, table, tr, td)
 import Html.Events exposing (onClick, onInput)
-import Html.Attributes exposing (placeholder)
+import Html.Attributes exposing (placeholder, class)
 import Http
 import Json.Encode as Json
 import String
@@ -30,7 +30,6 @@ init =
 type Msg
     = NoOp
     | UpdateNaptanId String
-    | FetchInitialPredictions
     | RequestGeoLocation
     | InitialPredictionsError String
     | InitialPredictionsSuccess (List Prediction)
@@ -46,6 +45,7 @@ view model =
   div []
       [ button [ onClick RequestGeoLocation ] [ text "Show nearby stops" ]
       , renderStops model
+      , renderPredictions model
       ]
 
 renderStops : Model -> Html Msg
@@ -54,18 +54,18 @@ renderStops model =
 
 renderStop : Stop -> Html Msg
 renderStop stop =
-  div [] [ text stop.commonName ]
+  div [ class "stop", onClick (UpdateNaptanId stop.naptanId) ]
+    [ span [] [ text stop.naptanId ]
+    , span [] [ text stop.indicator ]
+    , span [] [ text stop.commonName ]
+    ]
 
-oldView : Model -> Html Msg
-oldView model =
+renderPredictions : Model -> Html Msg
+renderPredictions model =
   let
     sortedPredictions = List.sortBy .timeToStation <| Dict.values model.predictions
   in
-    div []
-        [ input [ onInput UpdateNaptanId, placeholder "Naptan ID" ] []
-        , button [ onClick FetchInitialPredictions ] [ text "Go" ]
-        , table [] (List.map drawPrediction sortedPredictions)
-        ]
+    table [] (List.map drawPrediction sortedPredictions)
 
 drawPrediction : Prediction -> Html Msg
 drawPrediction prediction =
@@ -95,14 +95,11 @@ update msg model =
       ( model, Cmd.none )
 
     UpdateNaptanId newNaptanId ->
-      ( { model | naptanId = newNaptanId }, Cmd.none )
-
-    FetchInitialPredictions ->
       let
         url =
-          "https://api.tfl.gov.uk/StopPoint/" ++ model.naptanId ++ "/Arrivals?mode=bus"
+          "https://api.tfl.gov.uk/StopPoint/" ++ newNaptanId ++ "/Arrivals?mode=bus"
       in
-        ( model,
+        ( { model | naptanId = newNaptanId, possibleStops = [] },
           Http.get url initialPredictionsDecoder
             |> Http.send handlePredictionsResponse )
 
