@@ -28,7 +28,7 @@ elmApp.ports.requestGeoLocation.subscribe(() => {
 
       console.log(geoLocation);
 
-      elmApp.ports.geoLocation.send(JSON.stringify(geoLocation));
+      elmApp.ports.geoLocation.send(geoLocation);
     });
   } else {
     console.log("Geo location not available");

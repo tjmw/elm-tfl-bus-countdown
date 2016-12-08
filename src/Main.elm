@@ -11,9 +11,13 @@ import Task exposing (Task)
 
 import Model exposing (Model, emptyModel)
 import Ports exposing (registerForLivePredictions, predictions, requestGeoLocation, geoLocation)
+import GeoLocationDecoder exposing (decodeGeoLocation)
 import Prediction exposing (Prediction, secondsToMinutes)
 import PredictionDecoder exposing (decodePredictions, initialPredictionsDecoder)
 import PredictionsUpdater exposing (updatePredictions)
+import Stop exposing (Stop)
+import StopsDocument exposing (StopsDocument)
+import StopPointsDecoder exposing (stopPointsDecoder)
 
 -- MODEL
 
@@ -32,6 +36,8 @@ type Msg
     | InitialPredictionsSuccess (List Prediction)
     | Predictions Json.Value
     | GeoLocation Json.Value
+    | FetchStopsError String
+    | FetchStopsSuccess StopsDocument
 
 -- VIEW
 
@@ -88,7 +94,7 @@ update msg model =
       in
         ( model,
           Http.get url initialPredictionsDecoder
-            |> Http.send processPredictionsResponse )
+            |> Http.send handlePredictionsResponse )
 
     InitialPredictionsSuccess listOfPredictions ->
       ( updatePredictions model listOfPredictions, registerForLivePredictions model.naptanId )
@@ -105,14 +111,37 @@ update msg model =
     RequestGeoLocation ->
       ( model, requestGeoLocation "" )
 
-    GeoLocation geoLocation ->
+    GeoLocation geoLocationJson ->
       let
-        _ = Debug.log "GeoLocation" geoLocation
+        geoLocation = decodeGeoLocation geoLocationJson
+        _ = Debug.log "GeoLocation" geoLocation.lat
+        url =
+          "https://api.tfl.gov.uk/StopPoint?lat=" ++ (toString geoLocation.lat) ++ "&lon=" ++ (toString geoLocation.long) ++ "&stopTypes=NaptanPublicBusCoachTram&radius=200&useStopPointHierarchy=True&returnLines=True&app_id=&app_key=&modes=bus"
       in
-        (model, Cmd.none)
+        ( model,
+          Http.get url stopPointsDecoder
+            |> Http.send handleStopsResponse )
 
-processPredictionsResponse : Result Http.Error (List Prediction) -> Msg
-processPredictionsResponse result =
+    FetchStopsError message ->
+      let
+        _ = Debug.log message
+      in
+         ( model, Cmd.none )
+
+    FetchStopsSuccess stopsDocument ->
+      let
+        _ = Debug.log "Success"
+      in
+         ( model, Cmd.none )
+
+handleStopsResponse : Result Http.Error (StopsDocument) -> Msg
+handleStopsResponse result =
+  case result of
+    Ok stopsDocument -> FetchStopsSuccess stopsDocument
+    Err msg -> FetchStopsError (toString msg)
+
+handlePredictionsResponse : Result Http.Error (List Prediction) -> Msg
+handlePredictionsResponse result =
   case result of
     Ok prediction -> InitialPredictionsSuccess prediction
     Err msg -> InitialPredictionsError (toString msg)
