@@ -10,7 +10,7 @@ import String
 import Task exposing (Task)
 
 import Model exposing (Model, emptyModel)
-import Ports exposing (registerForLivePredictions, predictions, requestGeoLocation, geoLocation)
+import Ports exposing (registerForLivePredictions, deregisterFromLivePredictions, predictions, requestGeoLocation, geoLocation)
 import GeoLocationDecoder exposing (decodeGeoLocation)
 import Prediction exposing (Prediction, secondsToMinutes)
 import PredictionDecoder exposing (decodePredictions, initialPredictionsDecoder)
@@ -116,7 +116,13 @@ update msg model =
       ( updatePredictions model <| decodePredictions newPredictionsJson, Cmd.none )
 
     RequestGeoLocation ->
-      ( model, requestGeoLocation "" )
+      let
+        unsubscribeCmd = if model.naptanId /= "" then deregisterFromLivePredictions model.naptanId
+                         else Cmd.none
+
+        cmd = Cmd.batch [ unsubscribeCmd, (requestGeoLocation "") ]
+      in
+        ( emptyModel, cmd )
 
     GeoLocation geoLocationJson ->
       let

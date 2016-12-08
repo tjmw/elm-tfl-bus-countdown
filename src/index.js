@@ -10,13 +10,27 @@ const elmApp = Elm.Main.embed(elmDiv);
 $.connection.hub.url = "https://push-api.tfl.gov.uk/signalr/hubs/signalr";
 
 const hub = $.connection.predictionsRoomHub;
+window.hub = hub;
 
 elmApp.ports.registerForLivePredictions.subscribe(function(naptanId) {
   $.connection.hub.start().done(function() {
     const lineRooms = [{ "NaptanId": naptanId }];
+    console.log("Registering for updates: " + naptanId);
     hub.server.addLineRooms(lineRooms)
   });
 });
+
+// Push notification callback
+hub.client.showPredictions = predictions => {
+  console.log(predictions);
+  elmApp.ports.predictions.send(predictions);
+}
+
+elmApp.ports.deregisterFromLivePredictions.subscribe(function(naptanId) {
+  const lineRooms = [{ "NaptanId": naptanId }];
+  console.log("Deregistering for updates: " + naptanId);
+  hub.server.removeLineRooms(lineRooms);
+})
 
 elmApp.ports.requestGeoLocation.subscribe(() => {
   if ("geolocation" in navigator) {
@@ -34,9 +48,3 @@ elmApp.ports.requestGeoLocation.subscribe(() => {
     console.log("Geo location not available");
   }
 });
-
-// Push notification callback
-hub.client.showPredictions = predictions => {
-  console.log(predictions);
-  elmApp.ports.predictions.send(predictions);
-}
