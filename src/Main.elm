@@ -2,7 +2,6 @@ module Main exposing (..)
 
 import Dict exposing(Dict)
 import Html exposing (Html, div, span, text, button, input, table, tr, td)
-import Html.App
 import Html.Events exposing (onClick, onInput)
 import Html.Attributes exposing (placeholder)
 import Http
@@ -103,7 +102,7 @@ subscriptions model =
 
 main : Program Never
 main =
-    Html.App.program
+    Html.program
         { init = init
         , view = view
         , update = update
