@@ -37,6 +37,7 @@ type Msg
     | GeoLocation Json.Value
     | FetchStopsError String
     | FetchStopsSuccess StopsDocument
+    | BackToStops
 
 -- VIEW
 
@@ -44,8 +45,7 @@ view : Model -> Html Msg
 view model =
   div []
       [ button [ onClick RequestGeoLocation ] [ text "Show nearby stops" ]
-      , renderStops model
-      , renderPredictions model
+      , if model.naptanId /= "" then renderPredictions model else renderStops model
       ]
 
 renderStops : Model -> Html Msg
@@ -60,15 +60,22 @@ renderStop stop =
     , span [] [ text stop.commonName ]
     ]
 
+renderBackToStops : Html Msg
+renderBackToStops =
+  div [ onClick BackToStops ] [ text "Back to stops" ]
+
 renderPredictions : Model -> Html Msg
 renderPredictions model =
   let
     sortedPredictions = List.sortBy .timeToStation <| Dict.values model.predictions
   in
-    table [] (List.map drawPrediction sortedPredictions)
+    div [] [
+      table [] (List.map renderPrediction sortedPredictions)
+      , renderBackToStops
+    ]
 
-drawPrediction : Prediction -> Html Msg
-drawPrediction prediction =
+renderPrediction : Prediction -> Html Msg
+renderPrediction prediction =
   tr []
       [ td [] [ text prediction.lineName ]
       , td [] [ text prediction.destinationName ]
@@ -99,7 +106,7 @@ update msg model =
         url =
           "https://api.tfl.gov.uk/StopPoint/" ++ newNaptanId ++ "/Arrivals?mode=bus"
       in
-        ( { model | naptanId = newNaptanId, possibleStops = [] },
+        ( { model | naptanId = newNaptanId },
           Http.get url initialPredictionsDecoder
             |> Http.send handlePredictionsResponse )
 
@@ -146,6 +153,9 @@ update msg model =
         _ = Debug.log "error" message
       in
          ( model, Cmd.none )
+
+    BackToStops ->
+      ( { model | predictions = Dict.empty, naptanId = "" }, deregisterFromLivePredictions model.naptanId )
 
 handleStopsResponse : Result Http.Error (StopsDocument) -> Msg
 handleStopsResponse result =
