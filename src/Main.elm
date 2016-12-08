@@ -45,7 +45,12 @@ view : Model -> Html Msg
 view model =
   div []
       [ button [ onClick RequestGeoLocation ] [ text "Show nearby stops" ]
-      , if model.naptanId /= "" then renderPredictions model else renderStops model
+      , if model.naptanId /= "" then
+          renderPredictions model
+        else if model.possibleStops /= [] then
+          renderStops model
+        else
+          text ""
       ]
 
 renderStops : Model -> Html Msg
