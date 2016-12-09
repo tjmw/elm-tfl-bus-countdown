@@ -20,6 +20,7 @@ import Stop exposing (Stop)
 import StopsDocument exposing (StopsDocument)
 import Date exposing (Date, hour, minute)
 import Time exposing (Time, second)
+import Loading exposing (toggleLoading)
 
 
 -- MODEL
@@ -36,19 +37,22 @@ init =
 
 view : Model -> Html Msg
 view model =
-    div []
-        [ div [ class "header" ]
-            [ button [ class "pure-button pure-button-primary button-large", onClick RequestGeoLocation ] [ text "Show nearby stops" ]
+    if model.loading then
+        div [] [ text "Loading..." ]
+    else
+        div []
+            [ div [ class "header" ]
+                [ button [ class "pure-button pure-button-primary button-large", onClick RequestGeoLocation ] [ text "Show nearby stops" ]
+                ]
+            , div [ class "content" ]
+                [ if model.naptanId /= "" then
+                    renderPredictions model
+                  else if model.possibleStops /= [] then
+                    Stops.View.view model |> Html.map StopsMsg
+                  else
+                    text ""
+                ]
             ]
-        , div [ class "content" ]
-            [ if model.naptanId /= "" then
-                renderPredictions model
-              else if model.possibleStops /= [] then
-                Stops.View.view model |> Html.map StopsMsg
-              else
-                text ""
-            ]
-        ]
 
 
 renderBackToStops : Html Msg
@@ -110,10 +114,10 @@ update msg model =
             ( model, Cmd.none )
 
         RequestGeoLocation ->
-            model |> resetApp
+            model |> toggleLoading |> resetApp
 
         StopsMsg (Stops.State.SelectStop newNaptanId) ->
-            model |> selectStop newNaptanId
+            model |> toggleLoading |> selectStop newNaptanId
 
         StopsMsg msg ->
             let
@@ -123,7 +127,7 @@ update msg model =
                 ( newModel, Cmd.map StopsMsg newStopsCommand )
 
         InitialPredictionsSuccess listOfPredictions ->
-            model |> handlePredictions listOfPredictions
+            model |> toggleLoading |> handlePredictions listOfPredictions
 
         InitialPredictionsError message ->
             model |> handlePredictionsError message
@@ -181,7 +185,7 @@ resetApp model =
         cmd =
             Cmd.batch [ unsubscribeCmd, (requestGeoLocation "") ]
     in
-        ( emptyModel, cmd )
+        ( { model | naptanId = "", predictions = Dict.empty, possibleStops = [] }, cmd )
 
 
 resetSelectedStop : Model -> ( Model, Cmd Msg )

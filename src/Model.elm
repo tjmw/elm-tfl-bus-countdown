@@ -9,8 +9,9 @@ type alias Model =
     { naptanId : String
     , predictions : Dict String Prediction
     , possibleStops : List Stop
+    , loading : Bool
     }
 
 
 emptyModel =
-    Model "" Dict.empty []
+    Model "" Dict.empty [] False

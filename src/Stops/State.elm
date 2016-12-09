@@ -7,6 +7,7 @@ import Model exposing (Model)
 import Ports exposing (geoLocation)
 import StopsDocument exposing (StopsDocument)
 import StopPointsDecoder exposing (stopPointsDecoder)
+import Loading exposing (toggleLoading)
 
 
 type Msg
@@ -23,7 +24,7 @@ update msg model =
             model |> fetchNearbyStops geoLocationJson
 
         FetchStopsSuccess stopsDocument ->
-            model |> updateStops stopsDocument
+            model |> toggleLoading |> updateStops stopsDocument
 
         FetchStopsError message ->
             model |> handleFetchStopsError message
