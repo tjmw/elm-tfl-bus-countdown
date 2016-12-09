@@ -4,6 +4,10 @@ import "./tflHubs";
 
 import Elm from './Main.elm'
 
+if (!window.location.host.match(/^localhost/) && window.location.protocol != "https:") {
+  window.location.protocol = "https:"
+}
+
 const elmDiv = document.querySelector("#main");
 const elmApp = Elm.Main.embed(elmDiv);
 
