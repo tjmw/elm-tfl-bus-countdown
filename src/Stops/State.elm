@@ -2,12 +2,12 @@ module Stops.State exposing (Msg(..), update, subscriptions)
 
 import Http
 import Json.Encode as Json
-
 import GeoLocationDecoder exposing (decodeGeoLocation)
 import Model exposing (Model)
 import Ports exposing (geoLocation)
 import StopsDocument exposing (StopsDocument)
 import StopPointsDecoder exposing (stopPointsDecoder)
+
 
 type Msg
     = GeoLocation Json.Value

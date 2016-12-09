@@ -30,6 +30,7 @@ init =
     ( emptyModel, Cmd.none )
 
 
+
 -- VIEW
 
 
@@ -44,6 +45,7 @@ view model =
           else
             text ""
         ]
+
 
 renderBackToStops : Html Msg
 renderBackToStops =
@@ -113,9 +115,10 @@ update msg model =
 
         StopsMsg msg ->
             let
-              ( newModel, newStopsCommand ) = model |> Stops.State.update msg
+                ( newModel, newStopsCommand ) =
+                    model |> Stops.State.update msg
             in
-              ( newModel, Cmd.map StopsMsg newStopsCommand )
+                ( newModel, Cmd.map StopsMsg newStopsCommand )
 
         InitialPredictionsSuccess listOfPredictions ->
             model |> handlePredictions listOfPredictions
@@ -210,12 +213,15 @@ handlePruneExpiredPredictions timeNow model =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     let
-        stopSubscriptions = Stops.State.subscriptions
+        stopSubscriptions =
+            Stops.State.subscriptions
     in
-        Sub.batch [ Sub.map StopsMsg stopSubscriptions
-                  , predictions Predictions
-                  , Time.every pruneInterval PruneExpiredPredictions
-                  ]
+        Sub.batch
+            [ Sub.map StopsMsg stopSubscriptions
+            , predictions Predictions
+            , Time.every pruneInterval PruneExpiredPredictions
+            ]
+
 
 pruneInterval : Time
 pruneInterval =

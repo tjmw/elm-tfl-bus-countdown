@@ -3,13 +3,15 @@ module Stops.View exposing (view)
 import Html exposing (Html, div, span, text)
 import Html.Events exposing (onClick)
 import Html.Attributes exposing (class)
-
 import Model exposing (Model)
 import Stop exposing (Stop)
 import Stops.State exposing (Msg)
 
+
 view : Model -> Html Msg
-view model = renderStops model
+view model =
+    renderStops model
+
 
 renderStops : Model -> Html Msg
 renderStops model =
