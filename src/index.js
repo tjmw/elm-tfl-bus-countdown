@@ -22,7 +22,8 @@ elmApp.ports.registerForLivePredictions.subscribe(function(naptanId) {
 
 // Push notification callback
 hub.client.showPredictions = predictions => {
-  console.log(predictions);
+  console.log("🚌 New predictions @", new Date().toTimeString());
+  console.table(predictions, ["LineName", "VehicleId", "DestinationName", "ExpectedArrival", "TimeToLive", "Id"]);
   elmApp.ports.predictions.send(predictions);
 }
 
