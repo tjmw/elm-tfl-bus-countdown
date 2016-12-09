@@ -1,6 +1,6 @@
 module Stops.View exposing (view)
 
-import Html exposing (Html, div, span, text)
+import Html exposing (Html, div, table, tr, td, text)
 import Html.Events exposing (onClick)
 import Html.Attributes exposing (class)
 import Model exposing (Model)
@@ -15,13 +15,13 @@ view model =
 
 renderStops : Model -> Html Msg
 renderStops model =
-    div [] (List.map renderStop model.possibleStops)
+    table [ class "pure-table pure-table-horizontal clickable-table" ] (List.map renderStop model.possibleStops)
 
 
 renderStop : Stop -> Html Msg
 renderStop stop =
-    div [ class "stop", onClick (Stops.State.SelectStop stop.naptanId) ]
-        [ span [] [ text stop.naptanId ]
-        , span [] [ text stop.indicator ]
-        , span [] [ text stop.commonName ]
+    tr [ class "stop", onClick (Stops.State.SelectStop stop.naptanId) ]
+        [ td [] [ text stop.naptanId ]
+        , td [] [ text stop.indicator ]
+        , td [] [ text stop.commonName ]
         ]

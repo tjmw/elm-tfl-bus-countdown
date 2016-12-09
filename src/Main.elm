@@ -37,19 +37,23 @@ init =
 view : Model -> Html Msg
 view model =
     div []
-        [ button [ onClick RequestGeoLocation ] [ text "Show nearby stops" ]
-        , if model.naptanId /= "" then
-            renderPredictions model
-          else if model.possibleStops /= [] then
-            Stops.View.view model |> Html.map StopsMsg
-          else
-            text ""
+        [ div [ class "header" ]
+            [ button [ class "pure-button pure-button-primary button-large", onClick RequestGeoLocation ] [ text "Show nearby stops" ]
+            ]
+        , div [ class "content" ]
+            [ if model.naptanId /= "" then
+                renderPredictions model
+              else if model.possibleStops /= [] then
+                Stops.View.view model |> Html.map StopsMsg
+              else
+                text ""
+            ]
         ]
 
 
 renderBackToStops : Html Msg
 renderBackToStops =
-    div [ onClick BackToStops ] [ text "Back to stops" ]
+    div [ class "pure-button", onClick BackToStops ] [ text "Back to stops" ]
 
 
 renderPredictions : Model -> Html Msg
@@ -59,7 +63,7 @@ renderPredictions model =
             List.sortBy .timeToStation <| Dict.values model.predictions
     in
         div []
-            [ table [] (List.map renderPrediction sortedPredictions)
+            [ table [ class "pure-table pure-table-horizontal" ] (List.map renderPrediction sortedPredictions)
             , renderBackToStops
             ]
 

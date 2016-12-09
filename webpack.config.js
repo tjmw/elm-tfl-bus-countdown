@@ -48,7 +48,8 @@ module.exports = {
       "window.jQuery": "jquery"
     }),
     new CopyWebpackPlugin([
-      { from: 'css/main.css', to: "css/main.css" }
+      { from: 'css/main.css', to: "css/main.css" },
+      { from: 'css/pure-min.css', to: "css/pure-min.css" }
     ])
   ]
 };
