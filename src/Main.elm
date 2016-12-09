@@ -13,7 +13,9 @@ import Ports exposing (registerForLivePredictions, deregisterFromLivePredictions
 import Prediction exposing (Prediction, secondsToMinutes)
 import PredictionDecoder exposing (decodePredictions, initialPredictionsDecoder)
 import PredictionsUpdater exposing (updatePredictions)
-import Stops
+import State exposing (Msg(..))
+import Stops.State
+import Stops.View
 import Stop exposing (Stop)
 import StopsDocument exposing (StopsDocument)
 import Date exposing (Date, hour, minute)
@@ -28,23 +30,6 @@ init =
     ( emptyModel, Cmd.none )
 
 
-
--- MESSAGES
-
-
-type Msg
-    = NoOp
-    | RequestGeoLocation
-    | StopsMsg Stops.Msg
-    | SelectStop String
-    | InitialPredictionsError String
-    | InitialPredictionsSuccess (List Prediction)
-    | Predictions Json.Value
-    | BackToStops
-    | PruneExpiredPredictions Time
-
-
-
 -- VIEW
 
 
@@ -55,25 +40,10 @@ view model =
         , if model.naptanId /= "" then
             renderPredictions model
           else if model.possibleStops /= [] then
-            renderStops model
+            Stops.View.view model |> Html.map StopsMsg
           else
             text ""
         ]
-
-
-renderStops : Model -> Html Msg
-renderStops model =
-    div [] (List.map renderStop model.possibleStops)
-
-
-renderStop : Stop -> Html Msg
-renderStop stop =
-    div [ class "stop", onClick (SelectStop stop.naptanId) ]
-        [ span [] [ text stop.naptanId ]
-        , span [] [ text stop.indicator ]
-        , span [] [ text stop.commonName ]
-        ]
-
 
 renderBackToStops : Html Msg
 renderBackToStops =
@@ -138,14 +108,14 @@ update msg model =
         RequestGeoLocation ->
             model |> resetApp
 
+        StopsMsg (Stops.State.SelectStop newNaptanId) ->
+            model |> selectStop newNaptanId
+
         StopsMsg msg ->
             let
-              ( newModel, newStopsCommand ) = model |> Stops.update msg
+              ( newModel, newStopsCommand ) = model |> Stops.State.update msg
             in
               ( newModel, Cmd.map StopsMsg newStopsCommand )
-
-        SelectStop newNaptanId ->
-            model |> selectStop newNaptanId
 
         InitialPredictionsSuccess listOfPredictions ->
             model |> handlePredictions listOfPredictions
@@ -240,7 +210,7 @@ handlePruneExpiredPredictions timeNow model =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     let
-        stopSubscriptions = Stops.subscriptions
+        stopSubscriptions = Stops.State.subscriptions
     in
         Sub.batch [ Sub.map StopsMsg stopSubscriptions
                   , predictions Predictions

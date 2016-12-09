@@ -1,4 +1,4 @@
-module Stops exposing (Msg, update, subscriptions)
+module Stops.State exposing (Msg(..), update, subscriptions)
 
 import Http
 import Json.Encode as Json
@@ -13,6 +13,7 @@ type Msg
     = GeoLocation Json.Value
     | FetchStopsError String
     | FetchStopsSuccess StopsDocument
+    | SelectStop String
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -26,6 +27,9 @@ update msg model =
 
         FetchStopsError message ->
             model |> handleFetchStopsError message
+
+        _ ->
+            ( model, Cmd.none )
 
 
 subscriptions : Sub Msg
