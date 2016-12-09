@@ -10,13 +10,12 @@ import String
 import Task exposing (Task)
 import Model exposing (Model, emptyModel)
 import Ports exposing (registerForLivePredictions, deregisterFromLivePredictions, predictions, requestGeoLocation, geoLocation)
-import GeoLocationDecoder exposing (decodeGeoLocation)
 import Prediction exposing (Prediction, secondsToMinutes)
 import PredictionDecoder exposing (decodePredictions, initialPredictionsDecoder)
 import PredictionsUpdater exposing (updatePredictions)
+import Stops
 import Stop exposing (Stop)
 import StopsDocument exposing (StopsDocument)
-import StopPointsDecoder exposing (stopPointsDecoder)
 import Date exposing (Date, hour, minute)
 import Time exposing (Time, second)
 
@@ -35,14 +34,12 @@ init =
 
 type Msg
     = NoOp
-    | SelectStop String
     | RequestGeoLocation
+    | StopsMsg Stops.Msg
+    | SelectStop String
     | InitialPredictionsError String
     | InitialPredictionsSuccess (List Prediction)
     | Predictions Json.Value
-    | GeoLocation Json.Value
-    | FetchStopsError String
-    | FetchStopsSuccess StopsDocument
     | BackToStops
     | PruneExpiredPredictions Time
 
@@ -138,6 +135,15 @@ update msg model =
         NoOp ->
             ( model, Cmd.none )
 
+        RequestGeoLocation ->
+            model |> resetApp
+
+        StopsMsg msg ->
+            let
+              ( newModel, newStopsCommand ) = model |> Stops.update msg
+            in
+              ( newModel, Cmd.map StopsMsg newStopsCommand )
+
         SelectStop newNaptanId ->
             model |> selectStop newNaptanId
 
@@ -149,18 +155,6 @@ update msg model =
 
         Predictions newPredictionsJson ->
             model |> handlePredictionsUpdate newPredictionsJson
-
-        RequestGeoLocation ->
-            model |> resetApp
-
-        GeoLocation geoLocationJson ->
-            model |> fetchNearbyStops geoLocationJson
-
-        FetchStopsSuccess stopsDocument ->
-            model |> updateStops stopsDocument
-
-        FetchStopsError message ->
-            model |> handleFetchStopsError message
 
         BackToStops ->
             model |> resetSelectedStop
@@ -215,48 +209,9 @@ resetApp model =
         ( emptyModel, cmd )
 
 
-fetchNearbyStops : Json.Value -> Model -> ( Model, Cmd Msg )
-fetchNearbyStops geoLocationJson model =
-    let
-        geoLocation =
-            decodeGeoLocation geoLocationJson
-
-        url =
-            "https://api.tfl.gov.uk/StopPoint?lat=" ++ (toString geoLocation.lat) ++ "&lon=" ++ (toString geoLocation.long) ++ "&stopTypes=NaptanPublicBusCoachTram&radius=200&useStopPointHierarchy=True&returnLines=True&app_id=&app_key=&modes=bus"
-    in
-        ( model
-        , Http.get url stopPointsDecoder
-            |> Http.send handleStopsResponse
-        )
-
-
-updateStops : StopsDocument -> Model -> ( Model, Cmd Msg )
-updateStops stopsDocument model =
-    ( { model | possibleStops = stopsDocument.stopPoints }, Cmd.none )
-
-
-handleFetchStopsError : String -> Model -> ( Model, Cmd Msg )
-handleFetchStopsError message model =
-    let
-        _ =
-            Debug.log "error" message
-    in
-        ( model, Cmd.none )
-
-
 resetSelectedStop : Model -> ( Model, Cmd Msg )
 resetSelectedStop model =
     ( { model | predictions = Dict.empty, naptanId = "" }, deregisterFromLivePredictions model.naptanId )
-
-
-handleStopsResponse : Result Http.Error StopsDocument -> Msg
-handleStopsResponse result =
-    case result of
-        Ok stopsDocument ->
-            FetchStopsSuccess stopsDocument
-
-        Err msg ->
-            FetchStopsError (toString msg)
 
 
 handlePredictionsResponse : Result Http.Error (List Prediction) -> Msg
@@ -284,12 +239,13 @@ handlePruneExpiredPredictions timeNow model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.batch
-        [ predictions Predictions
-        , geoLocation GeoLocation
-        , Time.every pruneInterval PruneExpiredPredictions
-        ]
-
+    let
+        stopSubscriptions = Stops.subscriptions
+    in
+        Sub.batch [ Sub.map StopsMsg stopSubscriptions
+                  , predictions Predictions
+                  , Time.every pruneInterval PruneExpiredPredictions
+                  ]
 
 pruneInterval : Time
 pruneInterval =
