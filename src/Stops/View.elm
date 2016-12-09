@@ -2,7 +2,7 @@ module Stops.View exposing (view)
 
 import Html exposing (Html, div, table, tr, td, text)
 import Html.Events exposing (onClick)
-import Html.Attributes exposing (class)
+import Html.Attributes exposing (class, attribute)
 import Model exposing (Model)
 import Stop exposing (Stop)
 import Stops.State exposing (Msg)
@@ -20,8 +20,7 @@ renderStops model =
 
 renderStop : Stop -> Html Msg
 renderStop stop =
-    tr [ class "stop", onClick (Stops.State.SelectStop stop.naptanId) ]
-        [ td [] [ text stop.naptanId ]
-        , td [] [ text stop.indicator ]
+    tr [ class "stop", attribute "data-naptan-id" stop.naptanId, onClick (Stops.State.SelectStop stop.naptanId) ]
+        [ td [] [ text stop.indicator ]
         , td [] [ text stop.commonName ]
         ]
