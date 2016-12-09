@@ -1,9 +1,11 @@
 module PredictionDecoder exposing (decodePredictions, predictionsDecoder, initialPredictionsDecoder)
 
 import Json.Encode as Json
+import Date
 import Json.Decode exposing (decodeValue, list, int, string, Decoder)
 import Json.Decode.Pipeline exposing (decode, required)
 import Prediction exposing (Prediction)
+import Json.Decode.Extra exposing (date)
 
 
 decodePredictions : Json.Value -> List Prediction
@@ -34,6 +36,7 @@ predictionDecoder =
         |> required "TimeToStation" int
         |> required "DestinationName" string
         |> required "VehicleId" string
+        |> required "TimeToLive" date
 
 
 initialPredictionsDecoder : Decoder (List Prediction)
@@ -48,3 +51,4 @@ initialPredictionDecoder =
         |> required "timeToStation" int
         |> required "destinationName" string
         |> required "vehicleId" string
+        |> required "timeToLive" date

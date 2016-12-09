@@ -17,6 +17,8 @@ import PredictionsUpdater exposing (updatePredictions)
 import Stop exposing (Stop)
 import StopsDocument exposing (StopsDocument)
 import StopPointsDecoder exposing (stopPointsDecoder)
+import Date exposing (Date, hour, minute)
+import Time exposing (Time, second)
 
 
 -- MODEL
@@ -42,6 +44,7 @@ type Msg
     | FetchStopsError String
     | FetchStopsSuccess StopsDocument
     | BackToStops
+    | PruneExpiredPredictions Time
 
 
 
@@ -99,6 +102,7 @@ renderPrediction prediction =
         , td [] [ text prediction.destinationName ]
         , td [] [ text <| formatTime prediction.timeToStation ]
         , td [] [ text prediction.vehicleId ]
+        , td [] [ text <| formatDate prediction.timeToLive ]
         ]
 
 
@@ -117,6 +121,11 @@ formatTime seconds =
 
             _ ->
                 (toString minutes) ++ " mins"
+
+
+formatDate : Date.Date -> String
+formatDate date =
+    (toString (hour date)) ++ ":" ++ (toString (minute date))
 
 
 
@@ -155,6 +164,9 @@ update msg model =
 
         BackToStops ->
             model |> resetSelectedStop
+
+        PruneExpiredPredictions timeNow ->
+            model |> handlePruneExpiredPredictions timeNow
 
 
 selectStop : String -> Model -> ( Model, Cmd Msg )
@@ -257,6 +269,15 @@ handlePredictionsResponse result =
             InitialPredictionsError (toString msg)
 
 
+handlePruneExpiredPredictions : Time -> Model -> ( Model, Cmd Msg )
+handlePruneExpiredPredictions timeNow model =
+    let
+        prunedPredictions =
+            Dict.filter (\k v -> (Date.toTime v.timeToLive) >= timeNow) model.predictions
+    in
+        ( { model | predictions = prunedPredictions }, Cmd.none )
+
+
 
 -- SUBSCRIPTIONS
 
@@ -266,7 +287,13 @@ subscriptions model =
     Sub.batch
         [ predictions Predictions
         , geoLocation GeoLocation
+        , Time.every pruneInterval PruneExpiredPredictions
         ]
+
+
+pruneInterval : Time
+pruneInterval =
+    5 * second
 
 
 
