@@ -3,7 +3,7 @@ module Main exposing (..)
 import Dict exposing (Dict)
 import Html exposing (Html, div, span, text, button, input, table, tr, td)
 import Html.Events exposing (onClick, onInput)
-import Html.Attributes exposing (placeholder, class)
+import Html.Attributes exposing (placeholder, class, attribute)
 import Http
 import Json.Encode as Json
 import String
@@ -70,12 +70,10 @@ renderPredictions model =
 
 renderPrediction : Prediction -> Html Msg
 renderPrediction prediction =
-    tr []
+    tr [ attribute "data-ttl" (toString prediction.timeToLive), attribute "data-vehicle-id" prediction.vehicleId ]
         [ td [] [ text prediction.lineName ]
         , td [] [ text prediction.destinationName ]
         , td [] [ text <| formatTime prediction.timeToStation ]
-        , td [] [ text prediction.vehicleId ]
-        , td [] [ text <| formatDate prediction.timeToLive ]
         ]
 
 
