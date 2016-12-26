@@ -22,3 +22,15 @@
 .button-large {
   font-size: 110%;
 }
+
+.stop-indicator {
+  width: 25%;
+}
+
+.stop-direction {
+  font-size: 0.25em;
+}
+
+.stop-compass-direction {
+  margin-left: 0.25em;
+}
