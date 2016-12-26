@@ -130,7 +130,7 @@ renderCompassDirection stop =
 
 renderBackToStops : Html Msg
 renderBackToStops =
-    div [ class "pure-button", onClick BackToStops ] [ text "Back to stops" ]
+    div [ class "pure-button", class "back-button", onClick BackToStops ] [ text "Back to stops" ]
 
 
 renderPredictions : Model -> Html Msg
@@ -151,9 +151,9 @@ renderPredictions model =
 renderPrediction : Prediction -> Html Msg
 renderPrediction prediction =
     tr [ attribute "data-ttl" (toString prediction.timeToLive), attribute "data-vehicle-id" prediction.vehicleId ]
-        [ td [] [ text prediction.lineName ]
-        , td [] [ text prediction.destinationName ]
-        , td [] [ text <| formatTime prediction.timeToStation ]
+        [ td [ class "prediction-route-number" ] [ text prediction.lineName ]
+        , td [ class "prediction-destination" ] [ text prediction.destinationName ]
+        , td [ class "prediction-time" ] [ text <| formatTime prediction.timeToStation ]
         ]
 
 
