@@ -124,9 +124,15 @@ renderLine : Line -> Html a
 renderLine line =
     div [ class "line" ] [ text line.name ]
 
+
 formatTowardsDirection : Stop -> String
 formatTowardsDirection stop =
-    Maybe.withDefault "" (Stop.towardsDirection stop)
+    case Stop.towardsDirection stop of
+        Just dir ->
+            "Towards " ++ dir
+
+        Nothing ->
+            ""
 
 
 formatCompassDirection : Stop -> String
