@@ -3,6 +3,7 @@ module StopPointsDecoder exposing (stopPointsDecoder)
 import Json.Encode as Json
 import Json.Decode exposing (at, list, string, Decoder)
 import Json.Decode.Pipeline exposing (decode, required)
+import Line exposing (Line)
 import StopsDocument exposing (StopsDocument)
 import Stop exposing (Stop)
 import StopProperty exposing (StopProperty)
@@ -21,6 +22,7 @@ stopPointDecoder =
         |> required "commonName" string
         |> required "indicator" string
         |> required "additionalProperties" (list stopPropertyDecoder)
+        |> required "lines" (list lineDecoder)
 
 
 stopPropertyDecoder : Decoder StopProperty
@@ -29,3 +31,8 @@ stopPropertyDecoder =
         |> required "category" string
         |> required "key" string
         |> required "value" string
+
+lineDecoder : Decoder Line
+lineDecoder =
+    decode Line
+        |> required "name" string
