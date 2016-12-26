@@ -5,6 +5,7 @@ import Json.Decode exposing (at, list, string, Decoder)
 import Json.Decode.Pipeline exposing (decode, required)
 import StopsDocument exposing (StopsDocument)
 import Stop exposing (Stop)
+import StopProperty exposing (StopProperty)
 
 
 stopPointsDecoder : Decoder StopsDocument
@@ -19,3 +20,12 @@ stopPointDecoder =
         |> required "naptanId" string
         |> required "commonName" string
         |> required "indicator" string
+        |> required "additionalProperties" (list stopPropertyDecoder)
+
+
+stopPropertyDecoder : Decoder StopProperty
+stopPropertyDecoder =
+    decode StopProperty
+        |> required "category" string
+        |> required "key" string
+        |> required "value" string

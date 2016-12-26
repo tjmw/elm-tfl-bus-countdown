@@ -102,9 +102,30 @@ renderStops model =
 renderStop : Stop -> Html Msg
 renderStop stop =
     tr [ class "stop", attribute "data-naptan-id" stop.naptanId, onClick (SelectStop stop.naptanId) ]
-        [ td [] [ text stop.indicator ]
-        , td [] [ text stop.commonName ]
+        [ td [ class "stop-indicator" ] [ text stop.indicator ]
+        , td []
+            [ text stop.commonName
+            , div [ class "stop-direction" ]
+                [ span [ class "stop-towards-direction" ] [ text <| renderTowardsDirection stop ]
+                , span [ class "stop-compass-direction" ] [ text <| renderCompassDirection stop ]
+                ]
+            ]
         ]
+
+
+renderTowardsDirection : Stop -> String
+renderTowardsDirection stop =
+    Maybe.withDefault "" (Stop.towardsDirection stop)
+
+
+renderCompassDirection : Stop -> String
+renderCompassDirection stop =
+    case Stop.compassDirection stop of
+        Just dir ->
+            "(" ++ dir ++ ")"
+
+        Nothing ->
+            ""
 
 
 renderBackToStops : Html Msg
