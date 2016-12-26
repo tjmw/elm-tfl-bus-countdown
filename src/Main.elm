@@ -8,8 +8,7 @@ import Html.Attributes exposing (placeholder, class, attribute)
 import Html.Events exposing (onClick, onInput)
 import Http
 import Json.Encode as Json
-import Loading exposing (toggleLoading)
-import Model exposing (Model, emptyModel)
+import Model exposing (Model, State(..), emptyModel)
 import Ports exposing (registerForLivePredictions, deregisterFromLivePredictions, predictions, requestGeoLocation, geoLocation)
 import Prediction exposing (Prediction, secondsToMinutes)
 import PredictionDecoder exposing (decodePredictions, initialPredictionsDecoder)
@@ -54,22 +53,35 @@ type Msg
 
 view : Model -> Html Msg
 view model =
-    if model.loading then
-        div [] [ text "Loading..." ]
-    else
-        div []
-            [ div [ class "header" ]
-                [ button [ class "pure-button pure-button-primary button-large", onClick RequestGeoLocation ] [ text "Show nearby stops" ]
+    case model.state of
+        LoadingStops ->
+            renderLoading
+
+        LoadingPredictions ->
+            renderLoading
+
+        FetchingGeoLocation ->
+            renderLoading
+
+        _ ->
+            div []
+                [ div [ class "header" ]
+                    [ button [ class "pure-button pure-button-primary button-large", onClick RequestGeoLocation ] [ text "Show nearby stops" ]
+                    ]
+                , div [ class "content" ]
+                    [ if model.naptanId /= "" then
+                        renderPredictions model
+                      else if model.possibleStops /= [] then
+                        renderStops model
+                      else
+                        text ""
+                    ]
                 ]
-            , div [ class "content" ]
-                [ if model.naptanId /= "" then
-                    renderPredictions model
-                  else if model.possibleStops /= [] then
-                    renderStops model
-                  else
-                    text ""
-                ]
-            ]
+
+
+renderLoading : Html a
+renderLoading =
+    div [] [ text "Loading..." ]
 
 
 renderStops : Model -> Html Msg
@@ -144,34 +156,39 @@ update msg model =
             ( model, Cmd.none )
 
         RequestGeoLocation ->
-            model |> toggleLoading |> resetApp
+            emptyModel |> setState FetchingGeoLocation |> initialSubs
 
         GeoLocation geoLocationJson ->
-            model |> fetchNearbyStops geoLocationJson
+            model |> setState LoadingStops |> fetchNearbyStops geoLocationJson
 
         FetchStopsSuccess stopsDocument ->
-            model |> toggleLoading |> updateStops stopsDocument
+            model |> setState ShowingStops |> updateStops stopsDocument
 
         FetchStopsError message ->
-            model |> handleFetchStopsError message
+            model |> setState Error |> handleFetchStopsError message
 
         SelectStop newNaptanId ->
-            model |> toggleLoading |> selectStop newNaptanId
+            model |> setState LoadingPredictions |> selectStop newNaptanId
 
         InitialPredictionsSuccess listOfPredictions ->
-            model |> toggleLoading |> handlePredictions listOfPredictions
+            model |> setState ShowingPredictions |> handlePredictions listOfPredictions
 
         InitialPredictionsError message ->
-            model |> handlePredictionsError message
+            model |> setState Error |> handlePredictionsError message
 
         Predictions newPredictionsJson ->
             model |> handlePredictionsUpdate newPredictionsJson
 
         BackToStops ->
-            model |> resetSelectedStop
+            model |> setState ShowingStops |> resetSelectedStop
 
         PruneExpiredPredictions timeNow ->
             model |> handlePruneExpiredPredictions timeNow
+
+
+setState : State -> Model -> Model
+setState newState model =
+    { model | state = newState }
 
 
 fetchNearbyStops : Json.Value -> Model -> ( Model, Cmd Msg )
@@ -244,8 +261,8 @@ handlePredictionsUpdate newPredictionsJson model =
     ( updatePredictions model <| decodePredictions newPredictionsJson, Cmd.none )
 
 
-resetApp : Model -> ( Model, Cmd Msg )
-resetApp model =
+initialSubs : Model -> ( Model, Cmd Msg )
+initialSubs model =
     let
         unsubscribeCmd =
             if model.naptanId /= "" then
@@ -256,7 +273,7 @@ resetApp model =
         cmd =
             Cmd.batch [ unsubscribeCmd, (requestGeoLocation "") ]
     in
-        ( { model | naptanId = "", predictions = Dict.empty, possibleStops = [] }, cmd )
+        ( model, cmd )
 
 
 resetSelectedStop : Model -> ( Model, Cmd Msg )
