@@ -32,6 +32,7 @@ stopPropertyDecoder =
         |> required "key" string
         |> required "value" string
 
+
 lineDecoder : Decoder Line
 lineDecoder =
     decode Line
