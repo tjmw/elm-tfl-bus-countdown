@@ -8,6 +8,7 @@ import Html.Attributes exposing (placeholder, class, attribute)
 import Html.Events exposing (onClick, onInput)
 import Http
 import Json.Encode as Json
+import Line exposing (Line)
 import Model exposing (Model, State(..), emptyModel)
 import Ports exposing (registerForLivePredictions, deregisterFromLivePredictions, predictions, requestGeoLocation, geoLocation)
 import Prediction exposing (Prediction, secondsToMinutes)
@@ -103,23 +104,33 @@ renderStop : Stop -> Html Msg
 renderStop stop =
     tr [ class "stop", attribute "data-naptan-id" stop.naptanId, onClick (SelectStop stop.naptanId) ]
         [ td [ class "stop-indicator" ] [ text stop.indicator ]
-        , td []
+        , td [ class "stop-data" ]
             [ text stop.commonName
             , div [ class "stop-direction" ]
-                [ span [ class "stop-towards-direction" ] [ text <| renderTowardsDirection stop ]
-                , span [ class "stop-compass-direction" ] [ text <| renderCompassDirection stop ]
+                [ span [ class "stop-towards-direction" ] [ text <| formatTowardsDirection stop ]
+                , span [ class "stop-compass-direction" ] [ text <| formatCompassDirection stop ]
                 ]
+            , div [ class "lines" ] (renderLines stop.lines)
             ]
         ]
 
 
-renderTowardsDirection : Stop -> String
-renderTowardsDirection stop =
+renderLines : List Line -> List (Html a)
+renderLines listOfLines =
+    List.map renderLine listOfLines
+
+
+renderLine : Line -> Html a
+renderLine line =
+    div [ class "line" ] [ text line.name ]
+
+formatTowardsDirection : Stop -> String
+formatTowardsDirection stop =
     Maybe.withDefault "" (Stop.towardsDirection stop)
 
 
-renderCompassDirection : Stop -> String
-renderCompassDirection stop =
+formatCompassDirection : Stop -> String
+formatCompassDirection stop =
     case Stop.compassDirection stop of
         Just dir ->
             "(" ++ dir ++ ")"

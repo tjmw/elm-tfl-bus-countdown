@@ -1,5 +1,6 @@
 module Stop exposing (Stop, towardsDirection, compassDirection)
 
+import Line exposing (Line)
 import StopProperty exposing (StopProperty)
 
 
@@ -8,6 +9,7 @@ type alias Stop =
     , commonName : String
     , indicator : String
     , properties : List StopProperty
+    , lines : List Line
     }
 
 
