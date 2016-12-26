@@ -63,20 +63,27 @@ view model =
         FetchingGeoLocation ->
             renderLoading
 
-        _ ->
-            div []
-                [ div [ class "header" ]
-                    [ button [ class "pure-button pure-button-primary button-large", onClick RequestGeoLocation ] [ text "Show nearby stops" ]
-                    ]
-                , div [ class "content" ]
-                    [ if model.naptanId /= "" then
-                        renderPredictions model
-                      else if model.possibleStops /= [] then
-                        renderStops model
-                      else
-                        text ""
-                    ]
-                ]
+        ShowingPredictions ->
+            renderPredictions model |> renderLayout
+
+        ShowingStops ->
+            renderStops model |> renderLayout
+
+        Initial ->
+            text "" |> renderLayout
+
+        Error ->
+            text "Something went wrong, please try again" |> renderLayout
+
+
+renderLayout : Html Msg -> Html Msg
+renderLayout content =
+    div []
+        [ div [ class "header" ]
+            [ button [ class "pure-button pure-button-primary button-large", onClick RequestGeoLocation ] [ text "Show nearby stops" ]
+            ]
+        , div [ class "content" ] [ content ]
+        ]
 
 
 renderLoading : Html a
@@ -86,7 +93,10 @@ renderLoading =
 
 renderStops : Model -> Html Msg
 renderStops model =
-    table [ class "pure-table pure-table-horizontal clickable-table" ] (List.map renderStop model.possibleStops)
+    if List.isEmpty model.possibleStops then
+        div [] [ text "No stops found" ]
+    else
+        table [ class "pure-table pure-table-horizontal clickable-table" ] (List.map renderStop model.possibleStops)
 
 
 renderStop : Stop -> Html Msg
@@ -108,10 +118,13 @@ renderPredictions model =
         sortedPredictions =
             List.sortBy .timeToStation <| Dict.values model.predictions
     in
-        div []
-            [ table [ class "pure-table pure-table-horizontal" ] (List.map renderPrediction sortedPredictions)
-            , renderBackToStops
-            ]
+        if List.isEmpty sortedPredictions then
+            div [] [ text "No predicted arrivals" ]
+        else
+            div []
+                [ table [ class "pure-table pure-table-horizontal" ] (List.map renderPrediction sortedPredictions)
+                , renderBackToStops
+                ]
 
 
 renderPrediction : Prediction -> Html Msg
