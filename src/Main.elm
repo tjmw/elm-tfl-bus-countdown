@@ -9,7 +9,7 @@ import Html.Events exposing (onClick, onInput)
 import Http
 import Json.Encode as Json
 import Line exposing (Line)
-import Model exposing (Model, State(..), emptyModel)
+import Model exposing (Model, State(..), emptyModel, resetModel)
 import Ports exposing (registerForLivePredictions, deregisterFromLivePredictions, predictions, requestGeoLocation, geoLocation)
 import Prediction exposing (Prediction, secondsToMinutes)
 import PredictionDecoder exposing (decodePredictions, initialPredictionsDecoder)
@@ -25,9 +25,15 @@ import Time exposing (Time, second)
 -- MODEL
 
 
-init : ( Model, Cmd Msg )
-init =
-    ( emptyModel, Cmd.none )
+type alias Flags =
+    { tfl_app_id : String
+    , tfl_app_key : String
+    }
+
+
+init : Flags -> ( Model, Cmd Msg )
+init flags =
+    ( { emptyModel | tfl_app_id = flags.tfl_app_id, tfl_app_key = flags.tfl_app_key }, Cmd.none )
 
 
 
@@ -207,7 +213,7 @@ update msg model =
             ( model, Cmd.none )
 
         RequestGeoLocation ->
-            emptyModel |> setState FetchingGeoLocation |> initialSubs
+            resetModel model |> setState FetchingGeoLocation |> initialSubs
 
         GeoLocation geoLocationJson ->
             model |> setState LoadingStops |> fetchNearbyStops geoLocationJson
@@ -248,8 +254,14 @@ fetchNearbyStops geoLocationJson model =
         geoLocation =
             decodeGeoLocation geoLocationJson
 
+        base_url =
+            "https://api.tfl.gov.uk/StopPoint"
+
+        qs =
+            "?lat=" ++ (toString geoLocation.lat) ++ "&lon=" ++ (toString geoLocation.long) ++ "&stopTypes=NaptanPublicBusCoachTram&radius=200&useStopPointHierarchy=True&returnLines=True&modes=bus"
+
         url =
-            "https://api.tfl.gov.uk/StopPoint?lat=" ++ (toString geoLocation.lat) ++ "&lon=" ++ (toString geoLocation.long) ++ "&stopTypes=NaptanPublicBusCoachTram&radius=200&useStopPointHierarchy=True&returnLines=True&app_id=&app_key=&modes=bus"
+            (base_url ++ qs) |> appendApiCreds model
     in
         ( model
         , Http.get url stopPointsDecoder
@@ -284,13 +296,24 @@ handleStopsResponse result =
 selectStop : String -> Model -> ( Model, Cmd Msg )
 selectStop newNaptanId model =
     let
+        base_url =
+            "https://api.tfl.gov.uk/StopPoint/" ++ newNaptanId ++ "/Arrivals"
+
+        qs =
+            "?mode=bus"
+
         url =
-            "https://api.tfl.gov.uk/StopPoint/" ++ newNaptanId ++ "/Arrivals?mode=bus"
+            (base_url ++ qs) |> appendApiCreds model
     in
         ( { model | naptanId = newNaptanId }
         , Http.get url initialPredictionsDecoder
             |> Http.send handlePredictionsResponse
         )
+
+
+appendApiCreds : Model -> String -> String
+appendApiCreds model url =
+    url ++ "&app_id=" ++ model.tfl_app_id ++ "&app_key=" ++ model.tfl_app_key
 
 
 handlePredictions : List Prediction -> Model -> ( Model, Cmd Msg )
@@ -373,9 +396,9 @@ pruneInterval =
 -- MAIN
 
 
-main : Program Never Model Msg
+main : Program Flags Model Msg
 main =
-    Html.program
+    Html.programWithFlags
         { init = init
         , view = view
         , update = update

@@ -9,7 +9,10 @@ if (!window.location.host.match(/^localhost/) && window.location.protocol != "ht
 }
 
 const elmDiv = document.querySelector("#main");
-const elmApp = Elm.Main.embed(elmDiv);
+const elmApp = Elm.Main.embed(elmDiv, {
+  tfl_app_id: process.env.TFL_APP_ID,
+  tfl_app_key: process.env.TFL_APP_KEY
+});
 
 $.connection.hub.url = "https://push-api.tfl.gov.uk/signalr/hubs/signalr";
 
