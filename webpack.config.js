@@ -1,5 +1,6 @@
 var webpack = require("webpack");
 var CopyWebpackPlugin = require('copy-webpack-plugin');
+var dotenv = require('dotenv').config();
 
 module.exports = {
   context: __dirname + "/src",
@@ -50,6 +51,7 @@ module.exports = {
     new CopyWebpackPlugin([
       { from: 'css/main.css', to: "css/main.css" },
       { from: 'css/pure-min.css', to: "css/pure-min.css" }
-    ])
+    ]),
+    new webpack.EnvironmentPlugin(["TFL_APP_ID", "TFL_APP_KEY"])
   ]
 };
