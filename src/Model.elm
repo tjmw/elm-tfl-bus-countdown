@@ -9,6 +9,7 @@ type State
     = Initial
     | Error
     | FetchingGeoLocation
+    | GeoLocationError
     | LoadingStops
     | ShowingStops
     | LoadingPredictions

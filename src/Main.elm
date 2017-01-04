@@ -10,7 +10,7 @@ import Http
 import Json.Encode as Json
 import Line exposing (Line)
 import Model exposing (Model, State(..), emptyModel, resetModel)
-import Ports exposing (registerForLivePredictions, deregisterFromLivePredictions, predictions, requestGeoLocation, geoLocation)
+import Ports exposing (registerForLivePredictions, deregisterFromLivePredictions, predictions, requestGeoLocation, geoLocation, geoLocationUnavailable)
 import Prediction exposing (Prediction, secondsToMinutes)
 import PredictionDecoder exposing (decodePredictions, initialPredictionsDecoder)
 import PredictionsUpdater exposing (updatePredictions)
@@ -44,6 +44,7 @@ type Msg
     = NoOp
     | RequestGeoLocation
     | GeoLocation Json.Value
+    | GeoLocationUnavailable String
     | FetchStopsError String
     | FetchStopsSuccess StopsDocument
     | SelectStop String
@@ -69,6 +70,9 @@ view model =
 
         FetchingGeoLocation ->
             renderLoading
+
+        GeoLocationError ->
+            renderGeoLocationError |> renderLayout
 
         ShowingPredictions ->
             renderPredictions model |> renderLayout
@@ -96,6 +100,11 @@ renderLayout content =
 renderLoading : Html a
 renderLoading =
     div [] [ text "Loading..." ]
+
+
+renderGeoLocationError : Html a
+renderGeoLocationError =
+    div [] [ text "Unable to access geolocation. Please allow access and try again." ]
 
 
 renderStops : Model -> Html Msg
@@ -217,6 +226,9 @@ update msg model =
 
         GeoLocation geoLocationJson ->
             model |> setState LoadingStops |> fetchNearbyStops geoLocationJson
+
+        GeoLocationUnavailable _ ->
+            model |> setState GeoLocationError |> \model_ -> ( model_, Cmd.none )
 
         FetchStopsSuccess stopsDocument ->
             model |> setState ShowingStops |> updateStops stopsDocument
@@ -382,6 +394,7 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
         [ geoLocation GeoLocation
+        , geoLocationUnavailable GeoLocationUnavailable
         , predictions Predictions
         , Time.every pruneInterval PruneExpiredPredictions
         ]
