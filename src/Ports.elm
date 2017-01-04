@@ -1,4 +1,4 @@
-port module Ports exposing (registerForLivePredictions, deregisterFromLivePredictions, predictions, requestGeoLocation, geoLocation)
+port module Ports exposing (registerForLivePredictions, deregisterFromLivePredictions, predictions, requestGeoLocation, geoLocation, geoLocationUnavailable)
 
 import Json.Encode as Json
 
@@ -23,3 +23,6 @@ port requestGeoLocation : String -> Cmd msg
 
 
 port geoLocation : (Json.Value -> msg) -> Sub msg
+
+
+port geoLocationUnavailable : (String -> msg) -> Sub msg

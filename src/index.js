@@ -41,18 +41,28 @@ elmApp.ports.deregisterFromLivePredictions.subscribe(function(naptanId) {
 })
 
 elmApp.ports.requestGeoLocation.subscribe(() => {
+  const success = (position) => {
+    const geoLocation = {
+      lat: position.coords.latitude,
+      long: position.coords.longitude
+    }
+
+    console.log(geoLocation);
+
+    elmApp.ports.geoLocation.send(geoLocation);
+  };
+
+  const error = () => {
+    elmApp.ports.geoLocationUnavailable.send("");
+  };
+
+  const options = {
+    timeout: 5000
+  };
+
   if ("geolocation" in navigator) {
-    navigator.geolocation.getCurrentPosition((position) => {
-      const geoLocation = {
-        lat: position.coords.latitude,
-        long: position.coords.longitude
-      }
-
-      console.log(geoLocation);
-
-      elmApp.ports.geoLocation.send(geoLocation);
-    });
+    navigator.geolocation.getCurrentPosition(success, error, options);
   } else {
-    console.log("Geo location not available");
+    error();
   }
 });
