@@ -9,7 +9,7 @@ import Html.Events exposing (onClick, onInput)
 import Http
 import Json.Encode as Json
 import Line exposing (Line)
-import Model exposing (Model, State(..), emptyModel, resetModel)
+import Model exposing (Model, State(..), resetModel)
 import Ports exposing (registerForLivePredictions, deregisterFromLivePredictions, predictions, requestGeoLocation, geoLocation, geoLocationUnavailable)
 import Prediction exposing (Prediction, secondsToMinutes)
 import PredictionDecoder exposing (decodePredictions, initialPredictionsDecoder)
@@ -33,7 +33,7 @@ type alias Flags =
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    ( { emptyModel | tfl_app_id = flags.tfl_app_id, tfl_app_key = flags.tfl_app_key }, Cmd.none )
+    ( Model "" Dict.empty [] Initial flags.tfl_app_id flags.tfl_app_key, Cmd.none )
 
 
 
