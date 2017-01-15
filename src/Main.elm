@@ -33,7 +33,7 @@ type alias Flags =
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    ( Model "" Dict.empty [] Initial flags.tfl_app_id flags.tfl_app_key, Cmd.none )
+    ( Model Nothing Dict.empty [] Initial flags.tfl_app_id flags.tfl_app_key, Cmd.none )
 
 
 
@@ -317,7 +317,7 @@ selectStop newNaptanId model =
         url =
             (base_url ++ qs) |> appendApiCreds model
     in
-        ( { model | naptanId = newNaptanId }
+        ( { model | naptanId = Just newNaptanId }
         , Http.get url initialPredictionsDecoder
             |> Http.send handlePredictionsResponse
         )
@@ -330,7 +330,17 @@ appendApiCreds model url =
 
 handlePredictions : List Prediction -> Model -> ( Model, Cmd Msg )
 handlePredictions listOfPredictions model =
-    ( updatePredictions model listOfPredictions, registerForLivePredictions model.naptanId )
+    ( updatePredictions model listOfPredictions, maybeRegisterCmd model.naptanId )
+
+
+maybeRegisterCmd : Maybe String -> Cmd Msg
+maybeRegisterCmd naptanId =
+    case naptanId of
+        Nothing ->
+            Cmd.none
+
+        Just id ->
+            registerForLivePredictions id
 
 
 handlePredictionsError : String -> Model -> ( Model, Cmd Msg )
@@ -350,21 +360,25 @@ handlePredictionsUpdate newPredictionsJson model =
 initialSubs : Model -> ( Model, Cmd Msg )
 initialSubs model =
     let
-        unsubscribeCmd =
-            if model.naptanId /= "" then
-                deregisterFromLivePredictions model.naptanId
-            else
-                Cmd.none
-
         cmd =
-            Cmd.batch [ unsubscribeCmd, (requestGeoLocation "") ]
+            Cmd.batch [ maybeDeregisterCmd model.naptanId, (requestGeoLocation "") ]
     in
         ( model, cmd )
 
 
+maybeDeregisterCmd : Maybe String -> Cmd Msg
+maybeDeregisterCmd naptanId =
+    case naptanId of
+        Nothing ->
+            Cmd.none
+
+        Just id ->
+            deregisterFromLivePredictions id
+
+
 resetSelectedStop : Model -> ( Model, Cmd Msg )
 resetSelectedStop model =
-    ( { model | predictions = Dict.empty, naptanId = "" }, deregisterFromLivePredictions model.naptanId )
+    ( { model | predictions = Dict.empty, naptanId = Nothing }, maybeDeregisterCmd model.naptanId )
 
 
 handlePredictionsResponse : Result Http.Error (List Prediction) -> Msg

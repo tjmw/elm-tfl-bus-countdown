@@ -17,7 +17,7 @@ type State
 
 
 type alias Model =
-    { naptanId : String
+    { naptanId : Maybe String
     , predictions : Dict String Prediction
     , possibleStops : List Stop
     , state : State
@@ -27,4 +27,4 @@ type alias Model =
 
 
 resetModel model =
-    { model | naptanId = "", predictions = Dict.empty, possibleStops = [], state = Initial }
+    { model | naptanId = Nothing, predictions = Dict.empty, possibleStops = [], state = Initial }
