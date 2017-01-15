@@ -3,18 +3,20 @@ module Main exposing (..)
 import Date exposing (Date, hour, minute)
 import Dict exposing (Dict)
 import GeoLocationDecoder exposing (decodeGeoLocation)
-import Html exposing (Html, div, span, text, button, input, table, tr, td)
-import Html.Attributes exposing (placeholder, class, attribute)
+import Html exposing (Html, div, span, text, button, input, table, tr, td, a)
+import Html.Attributes exposing (placeholder, class, attribute, href)
 import Html.Events exposing (onClick, onInput)
 import Http
 import Json.Encode as Json
 import Line exposing (Line)
 import Model exposing (Model, State(..), resetModel)
 import NaptanId exposing (NaptanId)
+import Navigation
 import Ports exposing (registerForLivePredictions, deregisterFromLivePredictions, predictions, requestGeoLocation, geoLocation, geoLocationUnavailable)
 import Prediction exposing (Prediction, secondsToMinutes)
 import PredictionDecoder exposing (decodePredictions, initialPredictionsDecoder)
 import PredictionsUpdater exposing (updatePredictions)
+import Routing exposing (RoutePath)
 import Stop exposing (Stop)
 import StopsDocument exposing (StopsDocument)
 import StopPointsDecoder exposing (stopPointsDecoder)
@@ -32,9 +34,9 @@ type alias Flags =
     }
 
 
-init : Flags -> ( Model, Cmd Msg )
-init flags =
-    ( Model Nothing Dict.empty [] Initial flags.tfl_app_id flags.tfl_app_key, Cmd.none )
+init : Flags -> Navigation.Location -> ( Model, Cmd Msg )
+init flags location =
+    update (UrlChange location) (Model Nothing Dict.empty [] Initial flags.tfl_app_id flags.tfl_app_key location)
 
 
 
@@ -43,6 +45,7 @@ init flags =
 
 type Msg
     = NoOp
+    | Reset
     | RequestGeoLocation
     | GeoLocation Json.Value
     | GeoLocationUnavailable String
@@ -51,9 +54,10 @@ type Msg
     | SelectStop String
     | InitialPredictionsError String
     | InitialPredictionsSuccess (List Prediction)
+    | NavigateTo String
     | Predictions Json.Value
-    | BackToStops
     | PruneExpiredPredictions Time
+    | UrlChange Navigation.Location
 
 
 
@@ -92,7 +96,7 @@ renderLayout : Html Msg -> Html Msg
 renderLayout content =
     div []
         [ div [ class "header" ]
-            [ button [ class "pure-button pure-button-primary button-large", onClick RequestGeoLocation ] [ text "Show nearby stops" ]
+            [ a [ class "pure-button pure-button-primary button-large", href "/#/locations/find" ] [ text "Show nearby stops" ]
             ]
         , div [ class "content" ] [ content ]
         ]
@@ -118,7 +122,7 @@ renderStops model =
 
 renderStop : Stop -> Html Msg
 renderStop stop =
-    tr [ class "stop", attribute "data-naptan-id" stop.naptanId, onClick (SelectStop stop.naptanId) ]
+    tr [ class "stop", attribute "data-naptan-id" stop.naptanId, onClick <| NavigateTo ("/#/stops/" ++ stop.naptanId) ]
         [ td [ class "stop-indicator" ] [ text stop.indicator ]
         , td [ class "stop-data" ]
             [ text stop.commonName
@@ -161,11 +165,6 @@ formatCompassDirection stop =
             ""
 
 
-renderBackToStops : Html Msg
-renderBackToStops =
-    div [ class "pure-button", class "back-button", onClick BackToStops ] [ text "Back to stops" ]
-
-
 renderPredictions : Model -> Html Msg
 renderPredictions model =
     let
@@ -177,7 +176,6 @@ renderPredictions model =
         else
             div []
                 [ table [ class "pure-table pure-table-horizontal" ] (List.map renderPrediction sortedPredictions)
-                , renderBackToStops
                 ]
 
 
@@ -220,22 +218,25 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         NoOp ->
-            ( model, Cmd.none )
+            model ! []
+
+        Reset ->
+            (model |> resetModel) ! []
 
         RequestGeoLocation ->
-            resetModel model |> setState FetchingGeoLocation |> initialSubs
+            model |> resetModel |> setState FetchingGeoLocation |> initialSubs
 
         GeoLocation geoLocationJson ->
-            model |> setState LoadingStops |> fetchNearbyStops geoLocationJson
+            model ! [ navigateToLocationPath geoLocationJson ]
 
         GeoLocationUnavailable _ ->
             model |> setState GeoLocationError |> \model_ -> ( model_, Cmd.none )
 
         FetchStopsSuccess stopsDocument ->
-            model |> setState ShowingStops |> updateStops stopsDocument
+            model |> setState ShowingStops |> updateStops stopsDocument |> resetSelectedStop
 
         FetchStopsError message ->
-            model |> setState Error |> handleFetchStopsError message
+            model |> setState Error |> handleFetchStopsError message |> resetSelectedStop
 
         SelectStop newNaptanId ->
             model |> setState LoadingPredictions |> selectStop newNaptanId
@@ -249,11 +250,14 @@ update msg model =
         Predictions newPredictionsJson ->
             model |> handlePredictionsUpdate newPredictionsJson
 
-        BackToStops ->
-            model |> setState ShowingStops |> resetSelectedStop
-
         PruneExpiredPredictions timeNow ->
             model |> handlePruneExpiredPredictions timeNow
+
+        UrlChange location ->
+            model |> handleRouteChange location
+
+        NavigateTo path ->
+            model ! [ Navigation.newUrl path ]
 
 
 setState : State -> Model -> Model
@@ -261,39 +265,76 @@ setState newState model =
     { model | state = newState }
 
 
-fetchNearbyStops : Json.Value -> Model -> ( Model, Cmd Msg )
-fetchNearbyStops geoLocationJson model =
+handleRouteChange : Navigation.Location -> Model -> ( Model, Cmd Msg )
+handleRouteChange location model =
+    let
+        newModel =
+            { model | currentRoute = location }
+
+        route =
+            Routing.fromLocation location
+    in
+        case route of
+            [ "stops", naptanId ] ->
+                update (SelectStop naptanId) newModel
+
+            [ "locations", "find" ] ->
+                update RequestGeoLocation newModel
+
+            [ "locations", lat, long ] ->
+                maybeFetchNearbyStops lat long newModel
+
+            _ ->
+                update Reset newModel
+
+
+navigateToLocationPath : Json.Value -> Cmd Msg
+navigateToLocationPath geoLocationJson =
     let
         geoLocation =
             decodeGeoLocation geoLocationJson
+    in
+        Navigation.newUrl ("/#/locations/" ++ (toString geoLocation.lat) ++ "/" ++ (toString geoLocation.long))
 
+
+maybeFetchNearbyStops : String -> String -> Model -> ( Model, Cmd Msg )
+maybeFetchNearbyStops lat long model =
+    case model.possibleStops of
+        [] ->
+            (model |> setState LoadingStops) ! [ fetchNearbyStops lat long model ]
+
+        _ ->
+            model |> setState ShowingStops |> resetSelectedStop
+
+
+fetchNearbyStops : String -> String -> Model -> Cmd Msg
+fetchNearbyStops lat long model =
+    let
         base_url =
             "https://api.tfl.gov.uk/StopPoint"
 
         qs =
-            "?lat=" ++ (toString geoLocation.lat) ++ "&lon=" ++ (toString geoLocation.long) ++ "&stopTypes=NaptanPublicBusCoachTram&radius=200&useStopPointHierarchy=True&returnLines=True&modes=bus"
+            "?lat=" ++ (lat) ++ "&lon=" ++ (long) ++ "&stopTypes=NaptanPublicBusCoachTram&radius=200&useStopPointHierarchy=True&returnLines=True&modes=bus"
 
         url =
             (base_url ++ qs) |> appendApiCreds model
     in
-        ( model
-        , Http.get url stopPointsDecoder
+        Http.get url stopPointsDecoder
             |> Http.send handleStopsResponse
-        )
 
 
-updateStops : StopsDocument -> Model -> ( Model, Cmd Msg )
+updateStops : StopsDocument -> Model -> Model
 updateStops stopsDocument model =
-    ( { model | possibleStops = stopsDocument.stopPoints }, Cmd.none )
+    { model | possibleStops = stopsDocument.stopPoints }
 
 
-handleFetchStopsError : String -> Model -> ( Model, Cmd Msg )
+handleFetchStopsError : String -> Model -> Model
 handleFetchStopsError message model =
     let
         _ =
             Debug.log "error" message
     in
-        ( model, Cmd.none )
+        model
 
 
 handleStopsResponse : Result Http.Error StopsDocument -> Msg
@@ -426,7 +467,7 @@ pruneInterval =
 
 main : Program Flags Model Msg
 main =
-    Html.programWithFlags
+    Navigation.programWithFlags UrlChange
         { init = init
         , view = view
         , update = update
