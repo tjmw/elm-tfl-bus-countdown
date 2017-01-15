@@ -1,6 +1,7 @@
 port module Ports exposing (registerForLivePredictions, deregisterFromLivePredictions, predictions, requestGeoLocation, geoLocation, geoLocationUnavailable)
 
 import Json.Encode as Json
+import NaptanId exposing (NaptanId)
 
 
 -- Live predictions stream ports

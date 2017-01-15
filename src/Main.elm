@@ -10,6 +10,7 @@ import Http
 import Json.Encode as Json
 import Line exposing (Line)
 import Model exposing (Model, State(..), resetModel)
+import NaptanId exposing (NaptanId)
 import Ports exposing (registerForLivePredictions, deregisterFromLivePredictions, predictions, requestGeoLocation, geoLocation, geoLocationUnavailable)
 import Prediction exposing (Prediction, secondsToMinutes)
 import PredictionDecoder exposing (decodePredictions, initialPredictionsDecoder)
@@ -317,7 +318,7 @@ selectStop newNaptanId model =
         url =
             (base_url ++ qs) |> appendApiCreds model
     in
-        ( { model | naptanId = Just newNaptanId }
+        ( { model | naptanId = Just (NaptanId.fromString newNaptanId) }
         , Http.get url initialPredictionsDecoder
             |> Http.send handlePredictionsResponse
         )
@@ -333,14 +334,14 @@ handlePredictions listOfPredictions model =
     ( updatePredictions model listOfPredictions, maybeRegisterCmd model.naptanId )
 
 
-maybeRegisterCmd : Maybe String -> Cmd Msg
+maybeRegisterCmd : Maybe NaptanId -> Cmd Msg
 maybeRegisterCmd naptanId =
     case naptanId of
         Nothing ->
             Cmd.none
 
         Just id ->
-            registerForLivePredictions id
+            registerForLivePredictions <| NaptanId.toString id
 
 
 handlePredictionsError : String -> Model -> ( Model, Cmd Msg )
@@ -366,14 +367,14 @@ initialSubs model =
         ( model, cmd )
 
 
-maybeDeregisterCmd : Maybe String -> Cmd Msg
+maybeDeregisterCmd : Maybe NaptanId -> Cmd Msg
 maybeDeregisterCmd naptanId =
     case naptanId of
         Nothing ->
             Cmd.none
 
         Just id ->
-            deregisterFromLivePredictions id
+            deregisterFromLivePredictions <| NaptanId.toString id
 
 
 resetSelectedStop : Model -> ( Model, Cmd Msg )

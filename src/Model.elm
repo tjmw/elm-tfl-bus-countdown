@@ -1,6 +1,7 @@
 module Model exposing (Model, State(..), resetModel)
 
 import Dict exposing (Dict)
+import NaptanId exposing (NaptanId)
 import Prediction exposing (Prediction)
 import Stop exposing (Stop)
 
@@ -17,7 +18,7 @@ type State
 
 
 type alias Model =
-    { naptanId : Maybe String
+    { naptanId : Maybe NaptanId
     , predictions : Dict String Prediction
     , possibleStops : List Stop
     , state : State
