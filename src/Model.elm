@@ -1,6 +1,7 @@
-module Model exposing (Model, State(..), emptyModel, resetModel)
+module Model exposing (Model, State(..), resetModel)
 
 import Dict exposing (Dict)
+import NaptanId exposing (NaptanId)
 import Prediction exposing (Prediction)
 import Stop exposing (Stop)
 
@@ -17,7 +18,7 @@ type State
 
 
 type alias Model =
-    { naptanId : String
+    { naptanId : Maybe NaptanId
     , predictions : Dict String Prediction
     , possibleStops : List Stop
     , state : State
@@ -26,9 +27,5 @@ type alias Model =
     }
 
 
-emptyModel =
-    Model "" Dict.empty [] Initial "" ""
-
-
 resetModel model =
-    { emptyModel | tfl_app_id = model.tfl_app_id, tfl_app_key = model.tfl_app_key }
+    { model | naptanId = Nothing, predictions = Dict.empty, possibleStops = [], state = Initial }
