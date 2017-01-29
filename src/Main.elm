@@ -96,7 +96,7 @@ renderLayout : Html Msg -> Html Msg
 renderLayout content =
     div []
         [ div [ class "header" ]
-            [ a [ class "pure-button pure-button-primary button-large", href "/#/locations/find" ] [ text "Show nearby stops" ]
+            [ a [ class "pure-button pure-button-primary button-large", href "#/locations/find" ] [ text "Show nearby stops" ]
             ]
         , div [ class "content" ] [ content ]
         ]
@@ -122,7 +122,7 @@ renderStops model =
 
 renderStop : Stop -> Html Msg
 renderStop stop =
-    tr [ class "stop", attribute "data-naptan-id" stop.naptanId, onClick <| NavigateTo ("/#/stops/" ++ stop.naptanId) ]
+    tr [ class "stop", attribute "data-naptan-id" stop.naptanId, onClick <| NavigateTo ("#/stops/" ++ stop.naptanId) ]
         [ td [ class "stop-indicator" ] [ text stop.indicator ]
         , td [ class "stop-data" ]
             [ text stop.commonName
@@ -294,7 +294,7 @@ navigateToLocationPath geoLocationJson =
         geoLocation =
             decodeGeoLocation geoLocationJson
     in
-        Navigation.newUrl ("/#/locations/" ++ (toString geoLocation.lat) ++ "/" ++ (toString geoLocation.long))
+        Navigation.newUrl ("#/locations/" ++ (toString geoLocation.lat) ++ "/" ++ (toString geoLocation.long))
 
 
 maybeFetchNearbyStops : String -> String -> Model -> ( Model, Cmd Msg )
