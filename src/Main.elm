@@ -221,10 +221,10 @@ update msg model =
             model ! []
 
         Reset ->
-            (model |> resetModel) ! []
+            (model |> resetModel) ! [ maybeDeregisterCmd model.naptanId ]
 
         RequestGeoLocation ->
-            model |> resetModel |> setState FetchingGeoLocation |> initialSubs
+            (model |> resetModel |> setState FetchingGeoLocation) ! [ requestGeoLocation "", maybeDeregisterCmd model.naptanId ]
 
         GeoLocation geoLocationJson ->
             model ! [ navigateToLocationPath geoLocationJson ]
@@ -233,10 +233,10 @@ update msg model =
             model |> setState GeoLocationError |> \model_ -> ( model_, Cmd.none )
 
         FetchStopsSuccess stopsDocument ->
-            model |> setState ShowingStops |> updateStops stopsDocument |> resetSelectedStop
+            (model |> setState ShowingStops |> updateStops stopsDocument) ! []
 
         FetchStopsError message ->
-            model |> setState Error |> handleFetchStopsError message |> resetSelectedStop
+            (model |> setState Error |> handleFetchStopsError message) ! []
 
         SelectStop newNaptanId ->
             model |> setState LoadingPredictions |> selectStop newNaptanId
@@ -301,10 +301,10 @@ maybeFetchNearbyStops : String -> String -> Model -> ( Model, Cmd Msg )
 maybeFetchNearbyStops lat long model =
     case model.possibleStops of
         [] ->
-            (model |> setState LoadingStops) ! [ fetchNearbyStops lat long model ]
+            (model |> setState LoadingStops |> resetSelectedStop) ! [ maybeDeregisterCmd model.naptanId, fetchNearbyStops lat long model ]
 
         _ ->
-            model |> setState ShowingStops |> resetSelectedStop
+            (model |> setState ShowingStops |> resetSelectedStop) ! [ maybeDeregisterCmd model.naptanId ]
 
 
 fetchNearbyStops : String -> String -> Model -> Cmd Msg
@@ -399,15 +399,6 @@ handlePredictionsUpdate newPredictionsJson model =
     ( updatePredictions model <| decodePredictions newPredictionsJson, Cmd.none )
 
 
-initialSubs : Model -> ( Model, Cmd Msg )
-initialSubs model =
-    let
-        cmd =
-            Cmd.batch [ maybeDeregisterCmd model.naptanId, (requestGeoLocation "") ]
-    in
-        ( model, cmd )
-
-
 maybeDeregisterCmd : Maybe NaptanId -> Cmd Msg
 maybeDeregisterCmd naptanId =
     case naptanId of
@@ -418,9 +409,9 @@ maybeDeregisterCmd naptanId =
             deregisterFromLivePredictions <| NaptanId.toString id
 
 
-resetSelectedStop : Model -> ( Model, Cmd Msg )
+resetSelectedStop : Model -> Model
 resetSelectedStop model =
-    ( { model | predictions = Dict.empty, naptanId = Nothing }, maybeDeregisterCmd model.naptanId )
+    { model | predictions = Dict.empty, naptanId = Nothing }
 
 
 handlePredictionsResponse : Result Http.Error (List Prediction) -> Msg
