@@ -5,7 +5,7 @@ var dotenv = require('dotenv').config();
 module.exports = {
   context: __dirname + "/src",
   entry: {
-    javascript: ["./index.js", "./gauges.js"],
+    javascript: ["./index.js"],
     html: "./index.html"
   },
   output: {
@@ -52,6 +52,6 @@ module.exports = {
       { from: 'css/main.css', to: "css/main.css" },
       { from: 'css/pure-min.css', to: "css/pure-min.css" }
     ]),
-    new webpack.EnvironmentPlugin(["TFL_APP_ID", "TFL_APP_KEY", "GAUGES_SITE_ID"])
+    new webpack.EnvironmentPlugin(["TFL_APP_ID", "TFL_APP_KEY"])
   ]
 };
