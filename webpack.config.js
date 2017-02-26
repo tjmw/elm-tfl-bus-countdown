@@ -5,11 +5,11 @@ var dotenv = require('dotenv').config();
 module.exports = {
   context: __dirname + "/src",
   entry: {
-    javascript: ["./index.js"],
-    html: "./index.html"
+    app: ["./index.js"],
+    ga: ["./ga.js"],
   },
   output: {
-    filename: "app.js",
+    filename: "[name].js",
     path: __dirname + "/dist",
   },
   module: {
@@ -52,6 +52,6 @@ module.exports = {
       { from: 'css/main.css', to: "css/main.css" },
       { from: 'css/pure-min.css', to: "css/pure-min.css" }
     ]),
-    new webpack.EnvironmentPlugin(["TFL_APP_ID", "TFL_APP_KEY"])
+    new webpack.EnvironmentPlugin(["TFL_APP_ID", "TFL_APP_KEY", "GOOGLE_TRACKING_ID"])
   ]
 };

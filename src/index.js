@@ -2,6 +2,7 @@ import $ from "jquery";
 import "signalr";
 import "./tflHubs";
 
+import "./index.html";
 import Elm from './Main.elm'
 
 if (!window.location.host.match(/^localhost/) && window.location.protocol != "https:") {
