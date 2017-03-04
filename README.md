@@ -4,6 +4,8 @@ https://tjmw.github.io/bus-countdown/
 
 Live TfL bus countdown written in Elm. This is a work in progress.
 
+![Preview](/docs/preview.gif?raw=true "Preview")
+
 ## Running
 
 ```sh
