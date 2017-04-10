@@ -9,8 +9,8 @@ Live TfL bus countdown written in Elm. This is a work in progress.
 ## Running
 
 ```sh
-$ npm install
+$ yarn install
 $ elm-package install
 $ cp .env.example .env # and edit
-$ npm run dev
+$ yarn run dev
 ```
