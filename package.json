@@ -5,27 +5,28 @@
   "main": "webpack.config.js",
   "dependencies": {
     "ace-css": "^1.1.0",
-    "dotenv": "^4.0.0",
+    "dotenv": "^6.2.0",
     "font-awesome": "^4.7.0",
     "signalr": "^2.2.1"
   },
   "devDependencies": {
-    "babel-core": "^6.18.2",
-    "babel-loader": "^6.2.8",
-    "babel-preset-env": "^1.7.0",
+    "@babel/core": "^7.2.0",
+    "@babel/preset-env": "^7.2.0",
+    "babel-loader": "^8.0.4",
     "copy-webpack-plugin": "^4.0.1",
     "css-loader": "^2.0.0",
-    "elm-webpack-loader": "^4.3.0",
-    "file-loader": "^0.11.1",
-    "style-loader": "^0.16.1",
-    "url-loader": "^0.5.7",
-    "webpack": "^2.3.3",
-    "webpack-dev-middleware": "^1.8.4",
-    "webpack-dev-server": "^2.4.2"
+    "elm-webpack-loader": "^5.0.0",
+    "file-loader": "^2.0.0",
+    "style-loader": "^0.23.1",
+    "url-loader": "^1.1.2",
+    "webpack": "^4.27.1",
+    "webpack-cli": "^3.1.2",
+    "webpack-dev-middleware": "^3.4.0",
+    "webpack-dev-server": "^3.1.10"
   },
   "babel": {
     "presets": [
-      "env"
+      "@babel/preset-env"
     ]
   },
   "scripts": {

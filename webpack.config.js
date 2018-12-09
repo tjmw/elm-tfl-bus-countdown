@@ -19,7 +19,7 @@ module.exports = {
         exclude: /node_modules/,
         loader: "babel-loader",
         options: {
-          presets: ["env"],
+          presets: ["@babel/preset-env"],
         },
       },
       {
@@ -55,5 +55,6 @@ module.exports = {
       { from: 'css/pure-min.css', to: "css/pure-min.css" }
     ]),
     new webpack.EnvironmentPlugin(["TFL_APP_ID", "TFL_APP_KEY", "GOOGLE_TRACKING_ID"])
-  ]
+  ],
+  mode: "production"
 };
