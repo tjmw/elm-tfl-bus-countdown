@@ -1,4 +1,4 @@
-module NaptanId exposing (NaptanId, toString, fromString)
+module NaptanId exposing (NaptanId, fromString, toString)
 
 
 type NaptanId

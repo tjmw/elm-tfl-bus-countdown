@@ -1,12 +1,12 @@
 module StopPointsDecoder exposing (stopPointsDecoder)
 
-import Json.Encode as Json
-import Json.Decode exposing (at, list, string, Decoder)
+import Json.Decode exposing (Decoder, at, list, string)
 import Json.Decode.Pipeline exposing (decode, required)
+import Json.Encode as Json
 import Line exposing (Line)
-import StopsDocument exposing (StopsDocument)
 import Stop exposing (Stop)
 import StopProperty exposing (StopProperty)
+import StopsDocument exposing (StopsDocument)
 
 
 stopPointsDecoder : Decoder StopsDocument

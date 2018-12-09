@@ -1,11 +1,11 @@
-module PredictionDecoder exposing (decodePredictions, predictionsDecoder, initialPredictionsDecoder)
+module PredictionDecoder exposing (decodePredictions, initialPredictionsDecoder, predictionsDecoder)
 
-import Json.Encode as Json
 import Date
-import Json.Decode exposing (decodeValue, list, int, string, Decoder)
-import Json.Decode.Pipeline exposing (decode, required)
-import Prediction exposing (Prediction)
+import Json.Decode exposing (Decoder, decodeValue, int, list, string)
 import Json.Decode.Extra exposing (date)
+import Json.Decode.Pipeline exposing (decode, required)
+import Json.Encode as Json
+import Prediction exposing (Prediction)
 
 
 decodePredictions : Json.Value -> List Prediction
