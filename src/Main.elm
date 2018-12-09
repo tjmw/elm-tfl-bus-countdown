@@ -1,17 +1,19 @@
-module Main exposing (Flags, Msg(..), appendApiCreds, fetchNearbyStops, formatCompassDirection, formatDate, formatTime, formatTowardsDirection, handleFetchStopsError, handlePredictions, handlePredictionsError, handlePredictionsResponse, handlePredictionsUpdate, handlePruneExpiredPredictions, handleRouteChange, handleStopsResponse, init, main, maybeDeregisterCmd, maybeFetchNearbyStops, maybeRegisterCmd, navigateToLocationPath, pruneInterval, renderGeoLocationError, renderLayout, renderLine, renderLines, renderLoading, renderPrediction, renderPredictions, renderStop, renderStops, resetSelectedStop, selectStop, setState, subscriptions, update, updateStops, view)
+module Main exposing (Flags, Msg(..), appendApiCreds, fetchNearbyStops, formatCompassDirection, formatTime, formatTowardsDirection, handleFetchStopsError, handlePredictions, handlePredictionsError, handlePredictionsResponse, handlePredictionsUpdate, handlePruneExpiredPredictions, handleRouteChange, handleStopsResponse, init, main, maybeDeregisterCmd, maybeFetchNearbyStops, maybeRegisterCmd, navigateToLocationPath, pruneInterval, renderGeoLocationError, renderLayout, renderLine, renderLines, renderLoading, renderPrediction, renderPredictions, renderStop, renderStops, resetSelectedStop, selectStop, setState, subscriptions, update, updateStops, view)
 
-import Date exposing (Date, hour, minute)
+import Browser exposing (UrlRequest(..))
+import Browser.Navigation as Nav
 import Dict exposing (Dict)
+import GeoLocation exposing (GeoLocation(..))
 import GeoLocationDecoder exposing (decodeGeoLocation)
 import Html exposing (Html, a, button, div, input, span, table, td, text, tr)
 import Html.Attributes exposing (attribute, class, href, placeholder)
 import Html.Events exposing (onClick, onInput)
 import Http
+import Iso8601
 import Json.Encode as Json
 import Line exposing (Line)
 import Model exposing (Model, State(..), resetModel)
 import NaptanId exposing (NaptanId)
-import Navigation
 import Ports exposing (deregisterFromLivePredictions, geoLocation, geoLocationUnavailable, predictions, registerForLivePredictions, requestGeoLocation)
 import Prediction exposing (Prediction, secondsToMinutes)
 import PredictionDecoder exposing (decodePredictions, initialPredictionsDecoder)
@@ -22,7 +24,8 @@ import StopPointsDecoder exposing (stopPointsDecoder)
 import StopsDocument exposing (StopsDocument)
 import String
 import Task exposing (Task)
-import Time exposing (Time, second)
+import Time exposing (Posix)
+import Url
 
 
 
@@ -35,9 +38,9 @@ type alias Flags =
     }
 
 
-init : Flags -> Navigation.Location -> ( Model, Cmd Msg )
-init flags location =
-    update (UrlChange location) (Model Nothing Dict.empty [] Initial flags.tfl_app_id flags.tfl_app_key location)
+init : Flags -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
+init flags location key =
+    update (UrlChange location) (Model key Nothing Dict.empty [] Initial flags.tfl_app_id flags.tfl_app_key location)
 
 
 
@@ -55,18 +58,25 @@ type Msg
     | SelectStop String
     | InitialPredictionsError String
     | InitialPredictionsSuccess (List Prediction)
-    | NavigateTo String
+    | NavigateTo Browser.UrlRequest
     | Predictions Json.Value
-    | PruneExpiredPredictions Time
-    | UrlChange Navigation.Location
+    | PruneExpiredPredictions Posix
+    | UrlChange Url.Url
 
 
 
 -- VIEW
 
 
-view : Model -> Html Msg
+view : Model -> Browser.Document Msg
 view model =
+    { title = "Bus Countdown"
+    , body = [ currentPage model ]
+    }
+
+
+currentPage : Model -> Html Msg
+currentPage model =
     case model.state of
         LoadingStops ->
             renderLoading
@@ -124,7 +134,7 @@ renderStops model =
 
 renderStop : Stop -> Html Msg
 renderStop stop =
-    tr [ class "stop", attribute "data-naptan-id" stop.naptanId, onClick <| NavigateTo ("#/stops/" ++ stop.naptanId) ]
+    a [ class "stop", attribute "data-naptan-id" stop.naptanId, href ("#/stops/" ++ stop.naptanId) ]
         [ td [ class "stop-indicator" ] [ text stop.indicator ]
         , td [ class "stop-data" ]
             [ text stop.commonName
@@ -184,7 +194,7 @@ renderPredictions model =
 
 renderPrediction : Prediction -> Html Msg
 renderPrediction prediction =
-    tr [ attribute "data-ttl" (toString prediction.timeToLive), attribute "data-vehicle-id" prediction.vehicleId ]
+    tr [ attribute "data-ttl" (Iso8601.fromTime prediction.timeToLive), attribute "data-vehicle-id" prediction.vehicleId ]
         [ td [ class "prediction-route-number" ] [ text prediction.lineName ]
         , td [ class "prediction-destination" ] [ text prediction.destinationName ]
         , td [ class "prediction-time" ] [ text <| formatTime prediction.timeToStation ]
@@ -202,15 +212,10 @@ formatTime seconds =
             "due"
 
         1 ->
-            toString minutes ++ " min"
+            String.fromInt minutes ++ " min"
 
         _ ->
-            toString minutes ++ " mins"
-
-
-formatDate : Date.Date -> String
-formatDate date =
-    toString (hour date) ++ ":" ++ toString (minute date)
+            String.fromInt minutes ++ " mins"
 
 
 
@@ -237,7 +242,7 @@ update msg model =
 
         GeoLocation geoLocationJson ->
             ( model
-            , navigateToLocationPath geoLocationJson
+            , navigateToLocationPath geoLocationJson model.key
             )
 
         GeoLocationUnavailable _ ->
@@ -271,10 +276,13 @@ update msg model =
         UrlChange location ->
             model |> handleRouteChange location
 
-        NavigateTo path ->
-            ( model
-            , Navigation.newUrl path
-            )
+        NavigateTo urlRequest ->
+            case urlRequest of
+                Internal url ->
+                    ( model, Nav.pushUrl model.key (Url.toString url) )
+
+                External url ->
+                    ( model, Nav.load url )
 
 
 setState : State -> Model -> Model
@@ -282,7 +290,7 @@ setState newState model =
     { model | state = newState }
 
 
-handleRouteChange : Navigation.Location -> Model -> ( Model, Cmd Msg )
+handleRouteChange : Url.Url -> Model -> ( Model, Cmd Msg )
 handleRouteChange location model =
     let
         newModel =
@@ -305,13 +313,19 @@ handleRouteChange location model =
             update Reset newModel
 
 
-navigateToLocationPath : Json.Value -> Cmd Msg
-navigateToLocationPath geoLocationJson =
+navigateToLocationPath : Json.Value -> Nav.Key -> Cmd Msg
+navigateToLocationPath geoLocationJson key =
     let
         geoLocation =
             decodeGeoLocation geoLocationJson
     in
-    Navigation.newUrl ("#/locations/" ++ toString geoLocation.lat ++ "/" ++ toString geoLocation.long)
+    case geoLocation of
+        GeoLocationSuccess lat long ->
+            Nav.pushUrl key ("#/locations/" ++ String.fromFloat lat ++ "/" ++ String.fromFloat long)
+
+        -- TODO: Handle this, we've got the screen already
+        GeoLocationFailure ->
+            Cmd.none
 
 
 maybeFetchNearbyStops : String -> String -> Model -> ( Model, Cmd Msg )
@@ -364,8 +378,8 @@ handleStopsResponse result =
         Ok stopsDocument ->
             FetchStopsSuccess stopsDocument
 
-        Err msg ->
-            FetchStopsError (toString msg)
+        Err _ ->
+            FetchStopsError "Something went wrong fetching stops"
 
 
 selectStop : String -> Model -> ( Model, Cmd Msg )
@@ -441,15 +455,15 @@ handlePredictionsResponse result =
         Ok prediction ->
             InitialPredictionsSuccess prediction
 
-        Err msg ->
-            InitialPredictionsError (toString msg)
+        Err _ ->
+            InitialPredictionsError "Something went wrong fetching predictions"
 
 
-handlePruneExpiredPredictions : Time -> Model -> ( Model, Cmd Msg )
+handlePruneExpiredPredictions : Time.Posix -> Model -> ( Model, Cmd Msg )
 handlePruneExpiredPredictions timeNow model =
     let
         prunedPredictions =
-            Dict.filter (\k v -> Date.toTime v.timeToLive >= timeNow) model.predictions
+            Dict.filter (\k v -> Time.posixToMillis v.timeToLive >= Time.posixToMillis timeNow) model.predictions
     in
     ( { model | predictions = prunedPredictions }, Cmd.none )
 
@@ -468,9 +482,9 @@ subscriptions model =
         ]
 
 
-pruneInterval : Time
+pruneInterval : Float
 pruneInterval =
-    5 * second
+    5 * 1000
 
 
 
@@ -479,9 +493,11 @@ pruneInterval =
 
 main : Program Flags Model Msg
 main =
-    Navigation.programWithFlags UrlChange
+    Browser.application
         { init = init
         , view = view
         , update = update
         , subscriptions = subscriptions
+        , onUrlChange = UrlChange
+        , onUrlRequest = NavigateTo
         }

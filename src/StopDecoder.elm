@@ -1,8 +1,10 @@
 module StopDecoder exposing (decodeStop)
 
-import Json.Decode exposing (Decoder, decodeValue, int, list, string)
-import Json.Decode.Pipeline exposing (decode, required)
+import Debug
+import Json.Decode exposing (Decoder, decodeValue, int, list, string, succeed)
+import Json.Decode.Pipeline exposing (required)
 import Json.Encode as Json
+import Prediction exposing (Prediction)
 import Stop exposing (Stop)
 
 
@@ -18,7 +20,7 @@ decodeStop json =
 
 stopDecoder : Decoder Stop
 stopDecoder =
-    decode Stop
+    succeed Stop
         |> required "nap" string
         |> required "TimeToStation" int
         |> required "DestinationName" string
@@ -32,7 +34,7 @@ initialPredictionsDecoder =
 
 initialPredictionDecoder : Decoder Prediction
 initialPredictionDecoder =
-    decode Prediction
+    succeed Prediction
         |> required "lineName" string
         |> required "timeToStation" int
         |> required "destinationName" string

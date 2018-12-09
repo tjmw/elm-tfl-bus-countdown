@@ -1,13 +1,13 @@
 module Routing exposing (RoutePath, fromLocation)
 
 import List exposing (drop)
-import Navigation
+import Url
 
 
 type alias RoutePath =
     List String
 
 
-fromLocation : Navigation.Location -> RoutePath
-fromLocation { hash } =
-    hash |> String.split "/" |> drop 1
+fromLocation : Url.Url -> RoutePath
+fromLocation { fragment } =
+    fragment |> Maybe.map (String.split "/" >> drop 1) |> Maybe.withDefault []
