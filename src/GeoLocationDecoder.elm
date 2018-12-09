@@ -1,9 +1,9 @@
 module GeoLocationDecoder exposing (decodeGeoLocation)
 
-import Json.Encode as Json
-import Json.Decode exposing (decodeValue, float, Decoder)
-import Json.Decode.Pipeline exposing (decode, required)
 import GeoLocation exposing (GeoLocation)
+import Json.Decode exposing (Decoder, decodeValue, float)
+import Json.Decode.Pipeline exposing (decode, required)
+import Json.Encode as Json
 
 
 decodeGeoLocation : Json.Value -> GeoLocation

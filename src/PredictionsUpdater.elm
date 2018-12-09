@@ -17,7 +17,7 @@ updatePredictions model listOfPredictions =
         predictionsDict =
             Dict.union newpredictionsDict model.predictions
     in
-        { model | predictions = predictionsDict }
+    { model | predictions = predictionsDict }
 
 
 listToDict : (a -> comparable) -> List a -> Dict comparable a

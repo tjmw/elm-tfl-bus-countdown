@@ -1,8 +1,8 @@
 module StopDecoder exposing (decodeStop)
 
-import Json.Encode as Json
-import Json.Decode exposing (decodeValue, list, int, string, Decoder)
+import Json.Decode exposing (Decoder, decodeValue, int, list, string)
 import Json.Decode.Pipeline exposing (decode, required)
+import Json.Encode as Json
 import Stop exposing (Stop)
 
 

@@ -1,10 +1,10 @@
-module Main exposing (..)
+module Main exposing (Flags, Msg(..), appendApiCreds, fetchNearbyStops, formatCompassDirection, formatDate, formatTime, formatTowardsDirection, handleFetchStopsError, handlePredictions, handlePredictionsError, handlePredictionsResponse, handlePredictionsUpdate, handlePruneExpiredPredictions, handleRouteChange, handleStopsResponse, init, main, maybeDeregisterCmd, maybeFetchNearbyStops, maybeRegisterCmd, navigateToLocationPath, pruneInterval, renderGeoLocationError, renderLayout, renderLine, renderLines, renderLoading, renderPrediction, renderPredictions, renderStop, renderStops, resetSelectedStop, selectStop, setState, subscriptions, update, updateStops, view)
 
 import Date exposing (Date, hour, minute)
 import Dict exposing (Dict)
 import GeoLocationDecoder exposing (decodeGeoLocation)
-import Html exposing (Html, div, span, text, button, input, table, tr, td, a)
-import Html.Attributes exposing (placeholder, class, attribute, href)
+import Html exposing (Html, a, button, div, input, span, table, td, text, tr)
+import Html.Attributes exposing (attribute, class, href, placeholder)
 import Html.Events exposing (onClick, onInput)
 import Http
 import Json.Encode as Json
@@ -12,17 +12,18 @@ import Line exposing (Line)
 import Model exposing (Model, State(..), resetModel)
 import NaptanId exposing (NaptanId)
 import Navigation
-import Ports exposing (registerForLivePredictions, deregisterFromLivePredictions, predictions, requestGeoLocation, geoLocation, geoLocationUnavailable)
+import Ports exposing (deregisterFromLivePredictions, geoLocation, geoLocationUnavailable, predictions, registerForLivePredictions, requestGeoLocation)
 import Prediction exposing (Prediction, secondsToMinutes)
 import PredictionDecoder exposing (decodePredictions, initialPredictionsDecoder)
 import PredictionsUpdater exposing (updatePredictions)
 import Routing exposing (RoutePath)
 import Stop exposing (Stop)
-import StopsDocument exposing (StopsDocument)
 import StopPointsDecoder exposing (stopPointsDecoder)
+import StopsDocument exposing (StopsDocument)
 import String
 import Task exposing (Task)
 import Time exposing (Time, second)
+
 
 
 -- MODEL
@@ -116,6 +117,7 @@ renderStops : Model -> Html Msg
 renderStops model =
     if List.isEmpty model.possibleStops then
         div [] [ text "No stops found" ]
+
     else
         table [ class "pure-table pure-table-horizontal clickable-table" ] (List.map renderStop model.possibleStops)
 
@@ -171,12 +173,13 @@ renderPredictions model =
         sortedPredictions =
             List.sortBy .timeToStation <| Dict.values model.predictions
     in
-        if List.isEmpty sortedPredictions then
-            div [] [ text "No predicted arrivals" ]
-        else
-            div []
-                [ table [ class "pure-table pure-table-horizontal" ] (List.map renderPrediction sortedPredictions)
-                ]
+    if List.isEmpty sortedPredictions then
+        div [] [ text "No predicted arrivals" ]
+
+    else
+        div []
+            [ table [ class "pure-table pure-table-horizontal" ] (List.map renderPrediction sortedPredictions)
+            ]
 
 
 renderPrediction : Prediction -> Html Msg
@@ -194,20 +197,20 @@ formatTime seconds =
         minutes =
             secondsToMinutes <| seconds
     in
-        case minutes of
-            0 ->
-                "due"
+    case minutes of
+        0 ->
+            "due"
 
-            1 ->
-                (toString minutes) ++ " min"
+        1 ->
+            toString minutes ++ " min"
 
-            _ ->
-                (toString minutes) ++ " mins"
+        _ ->
+            toString minutes ++ " mins"
 
 
 formatDate : Date.Date -> String
 formatDate date =
-    (toString (hour date)) ++ ":" ++ (toString (minute date))
+    toString (hour date) ++ ":" ++ toString (minute date)
 
 
 
@@ -218,25 +221,37 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         NoOp ->
-            model ! []
+            ( model
+            , Cmd.none
+            )
 
         Reset ->
-            (model |> resetModel) ! [ maybeDeregisterCmd model.naptanId ]
+            ( model |> resetModel
+            , maybeDeregisterCmd model.naptanId
+            )
 
         RequestGeoLocation ->
-            (model |> resetModel |> setState FetchingGeoLocation) ! [ requestGeoLocation "", maybeDeregisterCmd model.naptanId ]
+            ( model |> resetModel |> setState FetchingGeoLocation
+            , Cmd.batch [ requestGeoLocation "", maybeDeregisterCmd model.naptanId ]
+            )
 
         GeoLocation geoLocationJson ->
-            model ! [ navigateToLocationPath geoLocationJson ]
+            ( model
+            , navigateToLocationPath geoLocationJson
+            )
 
         GeoLocationUnavailable _ ->
-            model |> setState GeoLocationError |> \model_ -> ( model_, Cmd.none )
+            model |> setState GeoLocationError |> (\model_ -> ( model_, Cmd.none ))
 
         FetchStopsSuccess stopsDocument ->
-            (model |> setState ShowingStops |> updateStops stopsDocument) ! []
+            ( model |> setState ShowingStops |> updateStops stopsDocument
+            , Cmd.none
+            )
 
         FetchStopsError message ->
-            (model |> setState Error |> handleFetchStopsError message) ! []
+            ( model |> setState Error |> handleFetchStopsError message
+            , Cmd.none
+            )
 
         SelectStop newNaptanId ->
             model |> setState LoadingPredictions |> selectStop newNaptanId
@@ -257,7 +272,9 @@ update msg model =
             model |> handleRouteChange location
 
         NavigateTo path ->
-            model ! [ Navigation.newUrl path ]
+            ( model
+            , Navigation.newUrl path
+            )
 
 
 setState : State -> Model -> Model
@@ -274,18 +291,18 @@ handleRouteChange location model =
         route =
             Routing.fromLocation location
     in
-        case route of
-            [ "stops", naptanId ] ->
-                update (SelectStop naptanId) newModel
+    case route of
+        [ "stops", naptanId ] ->
+            update (SelectStop naptanId) newModel
 
-            [ "locations", "find" ] ->
-                update RequestGeoLocation newModel
+        [ "locations", "find" ] ->
+            update RequestGeoLocation newModel
 
-            [ "locations", lat, long ] ->
-                maybeFetchNearbyStops lat long newModel
+        [ "locations", lat, long ] ->
+            maybeFetchNearbyStops lat long newModel
 
-            _ ->
-                update Reset newModel
+        _ ->
+            update Reset newModel
 
 
 navigateToLocationPath : Json.Value -> Cmd Msg
@@ -294,17 +311,21 @@ navigateToLocationPath geoLocationJson =
         geoLocation =
             decodeGeoLocation geoLocationJson
     in
-        Navigation.newUrl ("#/locations/" ++ (toString geoLocation.lat) ++ "/" ++ (toString geoLocation.long))
+    Navigation.newUrl ("#/locations/" ++ toString geoLocation.lat ++ "/" ++ toString geoLocation.long)
 
 
 maybeFetchNearbyStops : String -> String -> Model -> ( Model, Cmd Msg )
 maybeFetchNearbyStops lat long model =
     case model.possibleStops of
         [] ->
-            (model |> setState LoadingStops |> resetSelectedStop) ! [ maybeDeregisterCmd model.naptanId, fetchNearbyStops lat long model ]
+            ( model |> setState LoadingStops |> resetSelectedStop
+            , Cmd.batch [ maybeDeregisterCmd model.naptanId, fetchNearbyStops lat long model ]
+            )
 
         _ ->
-            (model |> setState ShowingStops |> resetSelectedStop) ! [ maybeDeregisterCmd model.naptanId ]
+            ( model |> setState ShowingStops |> resetSelectedStop
+            , maybeDeregisterCmd model.naptanId
+            )
 
 
 fetchNearbyStops : String -> String -> Model -> Cmd Msg
@@ -314,13 +335,13 @@ fetchNearbyStops lat long model =
             "https://api.tfl.gov.uk/StopPoint"
 
         qs =
-            "?lat=" ++ (lat) ++ "&lon=" ++ (long) ++ "&stopTypes=NaptanPublicBusCoachTram&radius=200&useStopPointHierarchy=True&returnLines=True&modes=bus"
+            "?lat=" ++ lat ++ "&lon=" ++ long ++ "&stopTypes=NaptanPublicBusCoachTram&radius=200&useStopPointHierarchy=True&returnLines=True&modes=bus"
 
         url =
             (base_url ++ qs) |> appendApiCreds model
     in
-        Http.get url stopPointsDecoder
-            |> Http.send handleStopsResponse
+    Http.get url stopPointsDecoder
+        |> Http.send handleStopsResponse
 
 
 updateStops : StopsDocument -> Model -> Model
@@ -334,7 +355,7 @@ handleFetchStopsError message model =
         _ =
             Debug.log "error" message
     in
-        model
+    model
 
 
 handleStopsResponse : Result Http.Error StopsDocument -> Msg
@@ -359,10 +380,10 @@ selectStop newNaptanId model =
         url =
             (base_url ++ qs) |> appendApiCreds model
     in
-        ( { model | naptanId = Just (NaptanId.fromString newNaptanId) }
-        , Http.get url initialPredictionsDecoder
-            |> Http.send handlePredictionsResponse
-        )
+    ( { model | naptanId = Just (NaptanId.fromString newNaptanId) }
+    , Http.get url initialPredictionsDecoder
+        |> Http.send handlePredictionsResponse
+    )
 
 
 appendApiCreds : Model -> String -> String
@@ -391,7 +412,7 @@ handlePredictionsError message model =
         _ =
             Debug.log "Predictions request failed" message
     in
-        ( model, Cmd.none )
+    ( model, Cmd.none )
 
 
 handlePredictionsUpdate : Json.Value -> Model -> ( Model, Cmd Msg )
@@ -428,9 +449,9 @@ handlePruneExpiredPredictions : Time -> Model -> ( Model, Cmd Msg )
 handlePruneExpiredPredictions timeNow model =
     let
         prunedPredictions =
-            Dict.filter (\k v -> (Date.toTime v.timeToLive) >= timeNow) model.predictions
+            Dict.filter (\k v -> Date.toTime v.timeToLive >= timeNow) model.predictions
     in
-        ( { model | predictions = prunedPredictions }, Cmd.none )
+    ( { model | predictions = prunedPredictions }, Cmd.none )
 
 
 

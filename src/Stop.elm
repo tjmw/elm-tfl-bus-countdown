@@ -1,4 +1,4 @@
-module Stop exposing (Stop, towardsDirection, compassDirection)
+module Stop exposing (Stop, compassDirection, towardsDirection)
 
 import Line exposing (Line)
 import StopProperty exposing (StopProperty)
