@@ -1,11 +1,12 @@
 module PredictionDecoder exposing (decodePredictions, initialPredictionsDecoder, predictionsDecoder)
 
-import Date
-import Json.Decode exposing (Decoder, decodeValue, int, list, string)
-import Json.Decode.Extra exposing (date)
-import Json.Decode.Pipeline exposing (decode, required)
+import Debug
+import Iso8601
+import Json.Decode exposing (Decoder, decodeValue, fail, int, list, string, succeed)
+import Json.Decode.Pipeline exposing (required)
 import Json.Encode as Json
 import Prediction exposing (Prediction)
+import Time exposing (Posix)
 
 
 decodePredictions : Json.Value -> List Prediction
@@ -15,7 +16,7 @@ decodePredictions json =
             val
 
         Err msg ->
-            Debug.crash msg
+            []
 
 
 
@@ -31,12 +32,12 @@ predictionsDecoder =
 
 predictionDecoder : Decoder Prediction
 predictionDecoder =
-    decode Prediction
+    succeed Prediction
         |> required "LineName" string
         |> required "TimeToStation" int
         |> required "DestinationName" string
         |> required "VehicleId" string
-        |> required "TimeToLive" date
+        |> required "TimeToLive" dateDecoder
 
 
 initialPredictionsDecoder : Decoder (List Prediction)
@@ -46,9 +47,24 @@ initialPredictionsDecoder =
 
 initialPredictionDecoder : Decoder Prediction
 initialPredictionDecoder =
-    decode Prediction
+    succeed Prediction
         |> required "lineName" string
         |> required "timeToStation" int
         |> required "destinationName" string
         |> required "vehicleId" string
-        |> required "timeToLive" date
+        |> required "timeToLive" dateDecoder
+
+
+dateDecoder : Decoder Posix
+dateDecoder =
+    string |> Json.Decode.andThen decodeDate
+
+
+decodeDate : String -> Decoder Posix
+decodeDate string =
+    case Iso8601.toTime string of
+        Ok time ->
+            succeed time
+
+        Err error ->
+            fail "Bleurgh"

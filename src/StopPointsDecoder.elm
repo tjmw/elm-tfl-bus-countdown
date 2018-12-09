@@ -1,7 +1,7 @@
 module StopPointsDecoder exposing (stopPointsDecoder)
 
-import Json.Decode exposing (Decoder, at, list, string)
-import Json.Decode.Pipeline exposing (decode, required)
+import Json.Decode exposing (Decoder, at, list, string, succeed)
+import Json.Decode.Pipeline exposing (required)
 import Json.Encode as Json
 import Line exposing (Line)
 import Stop exposing (Stop)
@@ -11,13 +11,13 @@ import StopsDocument exposing (StopsDocument)
 
 stopPointsDecoder : Decoder StopsDocument
 stopPointsDecoder =
-    decode StopsDocument
+    succeed StopsDocument
         |> required "stopPoints" (list stopPointDecoder)
 
 
 stopPointDecoder : Decoder Stop
 stopPointDecoder =
-    decode Stop
+    succeed Stop
         |> required "naptanId" string
         |> required "commonName" string
         |> required "indicator" string
@@ -27,7 +27,7 @@ stopPointDecoder =
 
 stopPropertyDecoder : Decoder StopProperty
 stopPropertyDecoder =
-    decode StopProperty
+    succeed StopProperty
         |> required "category" string
         |> required "key" string
         |> required "value" string
@@ -35,5 +35,5 @@ stopPropertyDecoder =
 
 lineDecoder : Decoder Line
 lineDecoder =
-    decode Line
+    succeed Line
         |> required "name" string

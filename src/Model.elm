@@ -1,10 +1,11 @@
 module Model exposing (Model, State(..), resetModel)
 
+import Browser.Navigation as Nav
 import Dict exposing (Dict)
 import NaptanId exposing (NaptanId)
-import Navigation
 import Prediction exposing (Prediction)
 import Stop exposing (Stop)
+import Url
 
 
 type State
@@ -19,13 +20,14 @@ type State
 
 
 type alias Model =
-    { naptanId : Maybe NaptanId
+    { key : Nav.Key
+    , naptanId : Maybe NaptanId
     , predictions : Dict String Prediction
     , possibleStops : List Stop
     , state : State
     , tfl_app_id : String
     , tfl_app_key : String
-    , currentRoute : Navigation.Location
+    , currentRoute : Url.Url
     }
 
 

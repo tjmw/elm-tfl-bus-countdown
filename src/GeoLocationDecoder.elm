@@ -1,8 +1,8 @@
 module GeoLocationDecoder exposing (decodeGeoLocation)
 
-import GeoLocation exposing (GeoLocation)
-import Json.Decode exposing (Decoder, decodeValue, float)
-import Json.Decode.Pipeline exposing (decode, required)
+import GeoLocation exposing (GeoLocation(..), toGeoLocation)
+import Json.Decode exposing (Decoder, decodeValue, float, succeed)
+import Json.Decode.Pipeline exposing (required)
 import Json.Encode as Json
 
 
@@ -13,11 +13,11 @@ decodeGeoLocation json =
             val
 
         Err msg ->
-            Debug.crash msg
+            GeoLocationFailure
 
 
 geoLocationDecoder : Decoder GeoLocation
 geoLocationDecoder =
-    decode GeoLocation
+    succeed toGeoLocation
         |> required "lat" float
         |> required "long" float

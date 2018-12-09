@@ -1,6 +1,6 @@
 module Prediction exposing (Prediction, secondsToMinutes)
 
-import Date exposing (Date)
+import Time
 
 
 type alias Prediction =
@@ -8,7 +8,7 @@ type alias Prediction =
     , timeToStation : Int
     , destinationName : String
     , vehicleId : String
-    , timeToLive : Date
+    , timeToLive : Time.Posix
     }
 
 
