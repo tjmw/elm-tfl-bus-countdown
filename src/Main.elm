@@ -247,12 +247,12 @@ update msg model =
             )
 
         GeoLocation geoLocationJson ->
-            ( model
-            , navigateToLocationPath geoLocationJson model.key
-            )
+            handleGeoLocationResponse model geoLocationJson
 
         GeoLocationUnavailable _ ->
-            model |> setState GeoLocationError |> (\model_ -> ( model_, Cmd.none ))
+            ( model |> setState GeoLocationError
+            , Cmd.none
+            )
 
         FetchStopsSuccess stopsDocument ->
             ( model |> setState ShowingStops |> updateStops stopsDocument
@@ -319,19 +319,22 @@ handleRouteChange location model =
             update Reset newModel
 
 
-navigateToLocationPath : Json.Value -> Nav.Key -> Cmd Msg
-navigateToLocationPath geoLocationJson key =
+handleGeoLocationResponse : Model -> Json.Value -> ( Model, Cmd Msg )
+handleGeoLocationResponse model geoLocationJson =
     let
         geoLocation =
             decodeGeoLocation geoLocationJson
     in
     case geoLocation of
         GeoLocationSuccess lat long ->
-            Nav.pushUrl key ("#/locations/" ++ String.fromFloat lat ++ "/" ++ String.fromFloat long)
+            ( model
+            , Nav.pushUrl model.key ("#/locations/" ++ String.fromFloat lat ++ "/" ++ String.fromFloat long)
+            )
 
-        -- TODO: Handle this, we've got the screen already
         GeoLocationFailure ->
-            Cmd.none
+            ( model |> setState GeoLocationError
+            , Cmd.none
+            )
 
 
 maybeFetchNearbyStops : String -> String -> Model -> ( Model, Cmd Msg )
