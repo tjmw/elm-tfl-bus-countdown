@@ -134,15 +134,21 @@ renderStops model =
 
 renderStop : Stop -> Html Msg
 renderStop stop =
-    a [ class "stop", attribute "data-naptan-id" stop.naptanId, href ("#/stops/" ++ stop.naptanId) ]
-        [ td [ class "stop-indicator" ] [ text stop.indicator ]
+    let
+        stopPath =
+            "#/stops/" ++ stop.naptanId
+    in
+    tr [ class "stop", attribute "data-naptan-id" stop.naptanId ]
+        [ td [ class "stop-indicator" ] [ a [ class "table-link", href stopPath ] [ text stop.indicator ] ]
         , td [ class "stop-data" ]
-            [ text stop.commonName
-            , div [ class "stop-direction" ]
-                [ span [ class "stop-towards-direction" ] [ text <| formatTowardsDirection stop ]
-                , span [ class "stop-compass-direction" ] [ text <| formatCompassDirection stop ]
+            [ a [ class "table-link", href stopPath ]
+                [ text stop.commonName
+                , div [ class "stop-direction" ]
+                    [ span [ class "stop-towards-direction" ] [ text <| formatTowardsDirection stop ]
+                    , span [ class "stop-compass-direction" ] [ text <| formatCompassDirection stop ]
+                    ]
+                , div [ class "lines" ] (renderLines stop.lines)
                 ]
-            , div [ class "lines" ] (renderLines stop.lines)
             ]
         ]
 
@@ -188,7 +194,7 @@ renderPredictions model =
 
     else
         div []
-            [ table [ class "pure-table pure-table-horizontal" ] (List.map renderPrediction sortedPredictions)
+            [ table [ class "table pure-table pure-table-horizontal" ] (List.map renderPrediction sortedPredictions)
             ]
 
 
