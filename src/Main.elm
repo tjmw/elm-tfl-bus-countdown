@@ -6,7 +6,7 @@ import Dict exposing (Dict)
 import GeoLocation exposing (GeoLocation(..))
 import GeoLocationDecoder exposing (decodeGeoLocation)
 import Html exposing (Html, a, button, div, input, span, table, td, text, tr)
-import Html.Attributes exposing (attribute, class, href, placeholder)
+import Html.Attributes exposing (attribute, class, href, id, placeholder)
 import Html.Events exposing (onClick, onInput)
 import Http
 import Iso8601
@@ -71,7 +71,7 @@ type Msg
 view : Model -> Browser.Document Msg
 view model =
     { title = "Bus Countdown"
-    , body = [ currentPage model ]
+    , body = [ div [ id "main" ] [ currentPage model ] ]
     }
 
 
