@@ -6,7 +6,6 @@ module.exports = {
   context: __dirname + "/src",
   entry: {
     app: ["./index.js"],
-    ga: ["./ga.js"],
   },
   output: {
     filename: "[name].js",
@@ -54,7 +53,7 @@ module.exports = {
       { from: 'css/main.css', to: "css/main.css" },
       { from: 'css/pure-min.css', to: "css/pure-min.css" }
     ]),
-    new webpack.EnvironmentPlugin(["TFL_APP_ID", "TFL_APP_KEY", "GOOGLE_TRACKING_ID"])
+    new webpack.EnvironmentPlugin(["TFL_APP_ID", "TFL_APP_KEY"])
   ],
   mode: "production"
 };
