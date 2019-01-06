@@ -5,6 +5,14 @@
   color: #354B5E;
 }
 
+.button-large {
+  font-size: 110%;
+}
+
+.back-button {
+  margin-top: 1em;
+}
+
 .content {
   margin: 2em 0;
 }
@@ -19,12 +27,17 @@
   cursor: pointer;
 }
 
-.button-large {
-  font-size: 110%;
+.line {
+  background-color: #CA3C3C;
+  color: #FFFFFF;
+  display: inline-block;
+  font-size: 0.5em;
+  margin-right: 0.25em;
+  padding: 0.25em;
 }
 
-.back-button {
-  margin-top: 1em;
+.line:last-of-type {
+  margin-right: 0;
 }
 
 .prediction-route-number {
@@ -62,17 +75,4 @@
   display: block;
   padding: 0.5em 1em;
   text-decoration: none;
-}
-
-.line {
-  background-color: #CA3C3C;
-  color: #FFFFFF;
-  display: inline-block;
-  font-size: 0.5em;
-  margin-right: 0.25em;
-  padding: 0.25em;
-}
-
-.line:last-of-type {
-  margin-right: 0;
 }
